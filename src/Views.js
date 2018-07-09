@@ -27,7 +27,7 @@ function createAction_(name, opt_params) {
  * @param {(string|null)} opts.state - State to pass on to subsequent actions
  * @return {GoogleAppsScript.Card.Card}
  */
-function buildEditResponseCard(e,opts) {
+function buildEditResponseCard(e, opts) {
 
     if (!opts.state) {
         opts.state = '';
@@ -62,34 +62,67 @@ function buildEditResponseCard(e,opts) {
             createMinutesSelectDropdown_("End Minutes", "end_minute", opts.endMinute)
         )
 
-        .addWidget(
-            createDraftSelectDropdown_(e,"Draft to Use", "draft_id", opts.endMinute)
-        )
+        // .addWidget(
+        //     createDraftSelectDropdown_(e, "Draft to Use", "draft_id", opts.endMinute)
+        // )
 
         .addWidget(
             CardService.newButtonSet().addButton(
                 CardService.newTextButton()
                     .setText("Save Response")
                     .setOnClickAction(
-                        createAction_("saveResponse", { state: '' })
+                        createAction_("saveResponse", {state: ''})
                     )
             )
         );
 
-
-
-
-
-
-
-
-
-  return CardService.newCardBuilder()
-    .setHeader(CardService.newCardHeader().setTitle("Save Response"))
-    .addSection(preferenceSection)
-    .build();
+    testMessageList();
+    return CardService.newCardBuilder()
+        .setHeader(CardService.newCardHeader().setTitle("Save Response"))
+        .addSection(preferenceSection)
+        .build();
 }
 
+
+function testMessageList() {
+    var pageToken = null;
+    var msgArray = [];
+    do {
+        var msgList = Gmail.Users.Messages.list('me', {
+            q: 'in:draft  label:extra-response',
+            pageToken: pageToken,
+        });
+
+        msgArray.push(msgList);
+        pageToken = msgList.nextPageToken;
+    } while (pageToken);
+
+    console.info(msgArray);
+    for (var i = 0; i < msgArray.length; i++) {
+
+        console.info(msgArray[i].messages[0]);
+        var msg_id = msgArray[i].messages[0].id;
+
+        console.info('Message ID : %s', msg_id);
+        var msg = Gmail.Users.Messages.get("me", msg_id, {format: "full"});
+        console.info(msg);
+        var payload = msg.payload;
+        var headers = payload.headers;
+        console.info(headers);
+        //Date  Subject
+        for (var j = 0; j < headers.length; j++) {
+            var node = headers[j];
+            if (node.name === 'Date') {
+                console.info("Date is " + node.value);
+            }
+            if (node.name === 'Subject') {
+                console.info("Subject is " + node.value);
+            }
+        }
+
+    }
+
+}
 
 /**
  * Creates a drop down for selecting a draft
@@ -100,16 +133,16 @@ function buildEditResponseCard(e,opts) {
  * @return {GoogleAppsScript.Card.SelectionInput}
  * @private
  */
-function createDraftSelectDropdown_(e,label, name, defaultValue) {
+function createDraftSelectDropdown_(e, label, name, defaultValue) {
 
-    var accessToken = e.messageMetadata.accessToken;
-    var messageId = e.messageMetadata.messageId;
-    GmailApp.setCurrentMessageAccessToken(accessToken);
-    var mailMessage = GmailApp.getMessageById(messageId);
-    var subject = mailMessage.getSubject();
-    var date = mailMessage.getDate().toString();
-    var text = subject + " - " + date;
-    console.info('top test text is  ' , text);
+    // var accessToken = e.messageMetadata.accessToken;
+    // var messageId = e.messageMetadata.messageId;
+    // GmailApp.setCurrentMessageAccessToken(accessToken);
+    // var mailMessage = GmailApp.getMessageById(messageId);
+    // var subject = mailMessage.getSubject();
+    // var date = mailMessage.getDate().toString();
+    // var text = subject + " - " + date;
+    // console.info('top test text is  ', text);
 
     var widget = CardService.newSelectionInput()
         .setTitle(label)
@@ -118,23 +151,24 @@ function createDraftSelectDropdown_(e,label, name, defaultValue) {
 
     var accessToken = e.messageMetadata.accessToken;
     if (DEBUG) {
-        console.info('Current access token is  ' , accessToken);
-        console.info('Event in create drafts is  ' , e);
+        console.info('Current access token is  ', accessToken);
+        console.info('Event in create drafts is  ', e);
     }
     GmailApp.setCurrentMessageAccessToken(accessToken);
+    testMessageList();
 
-    //var threads = GmailApp.search('in:draft label:extra-response');
-    var threads = GmailApp.search('label:test-label');
-    console.info('got ' + threads.length + " test-label threads");
-    for (var i=0; i<threads.length; i++) {
-        var msgId = threads[0].getMessages()[0].getId();
-        console.info('labeled msg test-label id is  ' , msgId);
-        var msg = threads[0].getMessages()[0];
-        var subject = msg.getSubject();
-        var date = msg.getDate().toString();
-        var text = subject + " - " + date;
-        console.info('test text is  ' , text);
-    }
+    // //var threads = GmailApp.search('in:draft label:extra-response');
+    // var threads = GmailApp.search('label:test-label');
+    // console.info('got ' + threads.length + " test-label threads");
+    // for (var i = 0; i < threads.length; i++) {
+    //     var msgId = threads[0].getMessages()[0].getId();
+    //     console.info('labeled msg test-label id is  ', msgId);
+    //     var msg = threads[0].getMessages()[0];
+    //     var subject = msg.getSubject();
+    //     var date = msg.getDate().toString();
+    //     var text = subject + " - " + date;
+    //     console.info('test text is  ', text);
+    // }
 
 
     // var drafts = GmailApp.getDrafts();
@@ -175,7 +209,7 @@ function createDaysSelectDropdown_(label, name, defaultValue) {
         .setTitle(label)
         .setFieldName(name)
         .setType(CardService.SelectionInputType.DROPDOWN);
-    var days = ['Monday',"Tuesday","Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    var days = ['Monday', "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     for (var i = 0; i < days.length; ++i) {
         var text = days[i];
         widget.addItem(text, text, text === defaultValue);
@@ -223,7 +257,7 @@ function createMinutesSelectDropdown_(label, name, defaultValue) {
         .setFieldName(name)
         .setType(CardService.SelectionInputType.DROPDOWN);
     for (var i = 0; i < 12; ++i) {
-        var actual_minutes = i*5;
+        var actual_minutes = i * 5;
         var text = moment()
             .minutes(actual_minutes)
             .format("mm");
@@ -231,7 +265,6 @@ function createMinutesSelectDropdown_(label, name, defaultValue) {
     }
     return widget;
 }
-
 
 
 /**
@@ -247,13 +280,12 @@ function createTimezoneTestCard(e) {
 
     var section = CardService.newCardSection();
 
-    section.addWidget( CardService.newTextParagraph().setText(e.userLocale));
-    section.addWidget( CardService.newTextParagraph().setText(e.userTimezone.offSet));
-    section.addWidget( CardService.newTextParagraph().setText(e.userTimezone.id)); //this is the timezone string
-    section.addWidget( CardService.newTextParagraph().setText('script zone is ' + Session.getScriptTimeZone()));
+    section.addWidget(CardService.newTextParagraph().setText(e.userLocale));
+    section.addWidget(CardService.newTextParagraph().setText(e.userTimezone.offSet));
+    section.addWidget(CardService.newTextParagraph().setText(e.userTimezone.id)); //this is the timezone string
+    section.addWidget(CardService.newTextParagraph().setText('script zone is ' + Session.getScriptTimeZone()));
 
     card.addSection(section);
-
 
 
     return card.build();
@@ -325,7 +357,7 @@ function createAboutCard() {
             CardService.newTextButton()
                 .setText("New Response")
                 .setOnClickAction(
-                    createAction_("newResponse", { state: '' })
+                    createAction_("newResponse", {state: ''})
                 )
             )
         )
@@ -333,8 +365,6 @@ function createAboutCard() {
 
     return card.build();  // Don't forget to build the card!
 }
-
-
 
 
 /**
@@ -364,7 +394,7 @@ function buildMainCard(e) {
             CardService.newTextButton()
                 .setText("New Response")
                 .setOnClickAction(
-                    createAction_("newResponse", { state: '' })
+                    createAction_("newResponse", {state: ''})
                 )
             )
         )
@@ -408,6 +438,6 @@ function handleCheckboxChange(e) {
     var settings = getSettingsForUser();
     var b_on = e.formInput.settings_binary;
     if (DEBUG) {
-        console.info(' b on raw ' , b_on);
+        console.info(' b on raw ', b_on);
     }
 }
