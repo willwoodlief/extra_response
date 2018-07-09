@@ -1,0 +1,12 @@
+.idea/**
+.git/**
+assets/**
+node_modules/**
+node_modules/**/.*/**
+node_modules/**/.*
+third_party/**
+.gitignore
+package.json
+package-lock.json
+gulpfile.js
+README.md
