@@ -18,23 +18,41 @@ function createAction_(name, opt_params) {
 /**
  * Builds a card that displays the search options for scheduling a meeting.
  * @param {Event} e
- * @param {Object} opts Parameters for building the card
- * @param {(string|null)} opts.day_of_week - One of [Monday..Sunday]
- * @param {(number|null)} opts.startHour - start hour (0-23)
- * @param {(number|null)} opts.startMinute - start minute (0-59)
- * @param {(number|null)} opts.endHour - end hour (0-23)
- * @param {null|number} opts.endMinute - end minute (0-59)
- * @param {(string|null)} opts.state - State to pass on to subsequent actions
+ * @param {ResponseSetting} opts Response Setting
+ * @param {string} [error_response=null]  any optional message
  * @return {GoogleAppsScript.Card.Card}
  */
-function buildEditResponseCard(e, opts) {
+function buildEditResponseCard(e, opts,error_response) {
 
     if (!opts.state) {
         opts.state = '';
     }
+
+    var settings = getSettingsForUser();
+
+    var what_drafts =  createDraftSelectDropdown_( "Draft to Use", "thread_id", opts.thread_id,opts.draft_snippit);
+
+    if (!what_drafts) {
+        //there is nothing to display in the box
+        if (settings.lable_to_use) {
+            what_drafts = CardService.newTextParagraph()
+                .setText('There were no drafts with the label of  ' + settings.lable_to_use);
+        } else {
+            what_drafts = CardService.newTextParagraph()
+                .setText('To enable selecting a draft as a template, please go to settings and select a label to use ');
+        }
+    }
+
+
+    var top_header = CardService.newTextParagraph();
+    if (error_response) {
+        top_header.setText('<font color="#ff0000">Could not create the response, there was an issue<br><b>* ' + error_response + '</font></b>');
+    }
+
+
     var preferenceSection = CardService.newCardSection()
         .setHeader("Edit Response")
-
+        .addWidget(top_header)
         .addWidget(
             CardService.newTextInput()
                 .setFieldName("response_name")
@@ -62,9 +80,10 @@ function buildEditResponseCard(e, opts) {
             createMinutesSelectDropdown_("End Minutes", "end_minute", opts.endMinute)
         )
 
-        // .addWidget(
-        //     createDraftSelectDropdown_(e, "Draft to Use", "draft_id", opts.endMinute)
-        // )
+         .addWidget(
+             what_drafts
+
+         )
 
         .addWidget(
             CardService.newButtonSet().addButton(
@@ -74,9 +93,16 @@ function buildEditResponseCard(e, opts) {
                         createAction_("saveResponse", {state: ''})
                     )
             )
+                .addButton(
+                    CardService.newTextButton()
+                        .setText("Cancel")
+                        .setOnClickAction(
+                            createAction_("showMain", {state: ''})
+                        )
+                )
         );
 
-    testMessageList();
+
     return CardService.newCardBuilder()
         .setHeader(CardService.newCardHeader().setTitle("Save Response"))
         .addSection(preferenceSection)
@@ -84,113 +110,60 @@ function buildEditResponseCard(e, opts) {
 }
 
 
-function testMessageList() {
-    var pageToken = null;
-    var msgArray = [];
-    do {
-        var msgList = Gmail.Users.Messages.list('me', {
-            q: 'in:draft  label:extra-response',
-            pageToken: pageToken,
-        });
-
-        msgArray.push(msgList);
-        pageToken = msgList.nextPageToken;
-    } while (pageToken);
-
-    console.info(msgArray);
-    for (var i = 0; i < msgArray.length; i++) {
-
-        console.info(msgArray[i].messages[0]);
-        var msg_id = msgArray[i].messages[0].id;
-
-        console.info('Message ID : %s', msg_id);
-        var msg = Gmail.Users.Messages.get("me", msg_id, {format: "full"});
-        console.info(msg);
-        var payload = msg.payload;
-        var headers = payload.headers;
-        console.info(headers);
-        //Date  Subject
-        for (var j = 0; j < headers.length; j++) {
-            var node = headers[j];
-            if (node.name === 'Date') {
-                console.info("Date is " + node.value);
-            }
-            if (node.name === 'Subject') {
-                console.info("Subject is " + node.value);
-            }
-        }
-
-    }
-
-}
-
 /**
  * Creates a drop down for selecting a draft
- * @param {Event} e
  * @param {string} label - Top label of widget
  * @param {string} name - Key used in form submits
- * @param {number} defaultValue - Default draft id
+ * @param {string} defaultValue - Default draft id
  * @return {GoogleAppsScript.Card.SelectionInput}
  * @private
  */
-function createDraftSelectDropdown_(e, label, name, defaultValue) {
+function createLabelSelectDropdown_( label, name, defaultValue) {
 
-    // var accessToken = e.messageMetadata.accessToken;
-    // var messageId = e.messageMetadata.messageId;
-    // GmailApp.setCurrentMessageAccessToken(accessToken);
-    // var mailMessage = GmailApp.getMessageById(messageId);
-    // var subject = mailMessage.getSubject();
-    // var date = mailMessage.getDate().toString();
-    // var text = subject + " - " + date;
-    // console.info('top test text is  ', text);
+    var labels = getLabelList();
+    var widget = CardService.newSelectionInput()
+        .setTitle(label)
+        .setFieldName(name)
+        .setType(CardService.SelectionInputType.DROPDOWN);
+    for (var i = 0; i < labels.length; ++i) {
+        widget.addItem(labels[i], labels[i], labels[i] === defaultValue);
+    }
 
+    return widget;
+}
+
+
+
+/**
+ * Creates a drop down for selecting a draft
+ * @param {string} label - Top label of widget
+ * @param {string} name - Key used in form submits
+ * @param {string} defaultValue - Default draft id
+ * @param {string} default_name - the name of the default, in case it is not in the list
+ * @return {GoogleAppsScript.Card.SelectionInput|null}
+ * @private
+ */
+function createDraftSelectDropdown_( label, name, defaultValue,default_name) {
+    var drafts = getDraftArray();
+    console.info ("drafts array is ",drafts );
+    if (! (drafts.length > 0 || defaultValue) ) {
+        return null;
+    }
     var widget = CardService.newSelectionInput()
         .setTitle(label)
         .setFieldName(name)
         .setType(CardService.SelectionInputType.DROPDOWN);
 
-    var accessToken = e.messageMetadata.accessToken;
-    if (DEBUG) {
-        console.info('Current access token is  ', accessToken);
-        console.info('Event in create drafts is  ', e);
+    if (defaultValue) {
+        widget.addItem(default_name, defaultValue, defaultValue === defaultValue);
     }
-    GmailApp.setCurrentMessageAccessToken(accessToken);
-    testMessageList();
-
-    // //var threads = GmailApp.search('in:draft label:extra-response');
-    // var threads = GmailApp.search('label:test-label');
-    // console.info('got ' + threads.length + " test-label threads");
-    // for (var i = 0; i < threads.length; i++) {
-    //     var msgId = threads[0].getMessages()[0].getId();
-    //     console.info('labeled msg test-label id is  ', msgId);
-    //     var msg = threads[0].getMessages()[0];
-    //     var subject = msg.getSubject();
-    //     var date = msg.getDate().toString();
-    //     var text = subject + " - " + date;
-    //     console.info('test text is  ', text);
-    // }
+    for (var i = 0; i < drafts.length; ++i) {
+        var draft = drafts[i];
+        var text = get_draft_snippit(draft);
+        widget.addItem(text, draft.thread_id, draft.thread_id === defaultValue);
+    }
 
 
-    // var drafts = GmailApp.getDrafts();
-    // if (DEBUG) {
-    //     console.info('there are ' + drafts.length + 'drafts');
-    // }
-    // var draft = GmailApp.getDrafts()[0]; // The first draft message in the drafts folder
-    // var message = draft.getMessage();
-    // console.info('got subject',message.getSubject());
-    // for (var i = 0; i < drafts.length; i++) {
-    //     var draft = drafts[i];
-    //     var key = draft.getId();
-    //     if (DEBUG) {
-    //         console.info('the id of this draft is   ' , key);
-    //         console.info('the draft is   ' , draft);
-    //     }
-    //     var msg = draft.getMessage();
-    //     var subject = msg.getSubject();
-    //     var date = msg.getDate().toString();
-    //     var text = subject + " - " + date;
-    //     widget.addItem(text, key, key === defaultValue);
-    // }
 
     return widget;
 }
@@ -417,6 +390,21 @@ function buildMainCard(e) {
  */
 function createMainSettingCard() {
 
+    var settings = getSettingsForUser();
+
+    var labels = getLabelList();
+    var label_widget = CardService.newSelectionInput()
+        .setTitle("Label to Use When Selecting Drafts")
+        .setFieldName("lable_to_use")
+        .setType(CardService.SelectionInputType.DROPDOWN);
+    label_widget.addItem("(none)", null, null === settings.lable_to_use);
+    for (var i = 0; i < labels.length; ++i) {
+        label_widget.addItem(labels[i], labels[i], labels[i] === settings.lable_to_use);
+    }
+
+    label_widget.setOnChangeAction(CardService.newAction()
+        .setFunctionName("handleSettingsLabelChange")
+    );
 
     return CardService.newCardBuilder()
         .setHeader(CardService.newCardHeader().setTitle('Settings'))
@@ -425,19 +413,13 @@ function createMainSettingCard() {
                 .setType(CardService.SelectionInputType.CHECK_BOX)
                 .setTitle("Turn on Responses?")
                 .setFieldName("settings_binary")
-                .addItem("If Checked, then this will do responses", "is_on", false)
+                .addItem("If Checked, then this will do responses", "is_on", settings.b_is_on)
                 .setOnChangeAction(CardService.newAction()
-                    .setFunctionName("handleCheckboxChange")
+                    .setFunctionName("handlePluginOnCheckboxChange")
                 )
             )
+            .addWidget(label_widget)
+
         ).build();   // Don't forget to build the card!
 }
 
-
-function handleCheckboxChange(e) {
-    var settings = getSettingsForUser();
-    var b_on = e.formInput.settings_binary;
-    if (DEBUG) {
-        console.info(' b on raw ', b_on);
-    }
-}

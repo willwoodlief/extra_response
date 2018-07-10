@@ -71,7 +71,8 @@ var ActionHandlers = {
             console.info('user settigns  is ' , settings);
         }
 
-        var card =buildEditResponseCard(e,{day_of_week:'Tuesday',startHour:-1,startMinute:-1,endHour:-1,endMinute: -1,state: ''});
+        var card =buildEditResponseCard(e,{day_of_week:'Tuesday',startHour:-1,startMinute:-1,endHour:-1,
+            endMinute: -1,thread_id:'',draft_snippit:'',state: ''});
         return card;
     },
 
@@ -88,6 +89,10 @@ var ActionHandlers = {
             console.info(' old user settigns  is ' , settings);
         }
 
+        /**
+         *
+         * @type {ResponseSetting}
+         */
         var response = {
             day_of_week: e.formInput.day_of_week,
             response_name: e.formInput.response_name ? e.formInput.response_name : null ,
@@ -95,29 +100,66 @@ var ActionHandlers = {
             start_minute: parseInt(e.formInput.start_minute),
             end_hour: parseInt(e.formInput.end_hour),
             end_minute: parseInt(e.formInput.end_minute),
-            draft_id: e.formInput.draft_id,
+            thread_id: e.formInput.thread_id,
+            draft_snippit: get_draft_snippit( get_draft_info_from_thread(e.formInput.thread_id)),
             filter: null,
             star_action: null,
             labels: null
         };
 
-        if (e.userTimezone) {
-            settings.timezone = {id:e.userTimezone.id, offset: e.userTimezone.offSet};
-            settings.responses.push(response);
+        var error_message = validate_response(response);
+        if (error_message) {
+            var do_again_card =buildEditResponseCard(e,response,error_message);
+            return do_again_card;
         } else {
-            settings.timezone = {id:Session.getScriptTimeZone(), offset: null};
+            if (e.userTimezone) {
+                settings.timezone = {id:e.userTimezone.id, offset: e.userTimezone.offSet};
+                settings.responses.push(response);
+            } else {
+                settings.timezone = {id:Session.getScriptTimeZone(), offset: null};
+            }
+
+            updateSettingsForUser(settings);
+
+            if (DEBUG) {
+                console.info(' new user settigns  is ' , settings);
+            }
+
+            var card =buildMainCard(e);
+            return card;
         }
 
-        updateSettingsForUser(settings);
 
-        if (DEBUG) {
-            console.info(' new user settigns  is ' , settings);
-        }
-
-        var card =buildMainCard(e);
-        return card;
     },
 
 
 
 };
+
+/**
+ *
+ * @param {ResponseSetting} response
+ * @return {string|null}
+ */
+function validate_response(response) {
+    if (!response.thread_id) {return "Need to Set a Draft"}
+    return null;
+}
+
+function handleSettingsLabelChange(e) {
+    var settings = getSettingsForUser();
+    var label = e.formInput.lable_to_use;
+    settings.lable_to_use = label;
+    updateSettingsForUser(settings);
+}
+
+function handlePluginOnCheckboxChange(e) {
+    var settings = getSettingsForUser();
+    var b_on = !! e.formInput.settings_binary ;
+    if (DEBUG) {
+        console.info(' b on raw ', b_on);
+    }
+    settings.b_is_on = b_on;
+    updateSettingsForUser(settings);
+
+}

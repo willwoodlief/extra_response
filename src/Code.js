@@ -23,6 +23,20 @@
  * @Return {GoogleAppsScript.Card.Card|GoogleAppsScript.Card.ActionResponse|GoogleAppsScript.Card.UniversalActionResponse} optional card or action response to render
  */
 
+/**
+ * @typedef {Object} ResponseSetting
+ * @property {string|null} day_of_week - One of [Monday..Sunday]
+ * @property {number|null} startHour - start hour (0-23)
+ * @property {number|null} startMinute - start minute (0-59)
+ * @property {number|null} endHour - end hour (0-23)
+ * @property {null|number} endMinute - end minute (0-59)
+ * @property {string|null} thread_id - the draft thread id to use
+ * @property {string|null} draft_snippit - the draft id to use
+ * @property {string|null} state - State to pass on to subsequent actions
+ * @property {string|null} filter - response only acts if the email fits in the filter
+ * @property {string|null} star_action - response will star the email
+ * @property {array|null} labels - response will label the email
+ */
 var DEBUG = true;  // flag for adding in debugging code
 
 

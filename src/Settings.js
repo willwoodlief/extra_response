@@ -26,7 +26,8 @@ function clear_settings() {
     settings = {
         responses: [],
         timezone: null,
-        b_is_on: false
+        b_is_on: false,
+        lable_to_use: null,
     };
     if (DEBUG) {
         console.info(' cleared user settings  is ' , settings);
@@ -43,7 +44,8 @@ function getSettingsForUser() {
   return _.defaults(savedSettings, {
     responses: [],
     timezone: null,
-    b_is_on: false
+    b_is_on: false,
+      lable_to_use: null,
   });
 }
 
