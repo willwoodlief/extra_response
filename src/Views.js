@@ -24,9 +24,6 @@ function createAction_(name, opt_params) {
  */
 function buildEditResponseCard(e, opts,error_response) {
 
-    if (!opts.state) {
-        opts.state = '';
-    }
 
     var settings = getSettingsForUser();
 
@@ -50,6 +47,7 @@ function buildEditResponseCard(e, opts,error_response) {
     }
 
 
+
     var preferenceSection = CardService.newCardSection()
         .setHeader("Edit Response")
         .addWidget(top_header)
@@ -58,6 +56,29 @@ function buildEditResponseCard(e, opts,error_response) {
                 .setFieldName("response_name")
                 .setTitle("Response Name")
                 .setHint("Any name will do")
+                .setValue(opts.response_name)
+        )
+        .addWidget(
+            CardService.newTextInput()
+                .setFieldName("filter")
+                .setTitle("Email Filter For Response (optional)")
+                .setHint("")
+                .setValue(opts.filter ? opts.filter.toString(): '')
+        )
+
+        .addWidget(
+            CardService.newTextInput()
+                .setFieldName("labels")
+                .setTitle("Labels to apply - seperated by a space")
+                .setHint("")
+                .setValue(opts.labels ? opts.labels.toString(): '')
+        )
+
+        .addWidget(CardService.newSelectionInput()
+            .setType(CardService.SelectionInputType.CHECK_BOX)
+            .setTitle("Star Message")
+            .setFieldName("star_action")
+            .addItem("Star the incoming message ", "star_action", opts.star_action)
         )
 
         .addWidget(
@@ -80,17 +101,28 @@ function buildEditResponseCard(e, opts,error_response) {
             createMinutesSelectDropdown_("End Minutes", "end_minute", opts.endMinute)
         )
 
+        .addWidget(
+            CardService.newTextParagraph()
+                .setText('For a response, you should pick either  <br> a draft (filtered by the label you select in settings <br> or a spreadsheet row (add to it by going to settings)')
+        )
+
+
+
+
          .addWidget(
              what_drafts
-
          )
+
+        .addWidget(
+            createSpreadsheetSelectDropdown_("Spreadsheet Response", "spreadsheet_entry", opts.spreadsheet_entry)
+        )
 
         .addWidget(
             CardService.newButtonSet().addButton(
                 CardService.newTextButton()
                     .setText("Save Response")
                     .setOnClickAction(
-                        createAction_("saveResponse", {state: ''})
+                        createAction_("saveResponse", {state: opts.slot.toString()})
                     )
             )
                 .addButton(
@@ -100,11 +132,21 @@ function buildEditResponseCard(e, opts,error_response) {
                             createAction_("showMain", {state: ''})
                         )
                 )
+        )
+
+        .addWidget(
+            CardService.newButtonSet().addButton(
+                CardService.newTextButton()
+                    .setText('<font color="#ff0000">Delete Response</font>')
+                    .setOnClickAction(
+                        createAction_("deleteResponse", {state: opts.slot.toString()})
+                    )
+            )
         );
 
 
     return CardService.newCardBuilder()
-        .setHeader(CardService.newCardHeader().setTitle("Save Response"))
+        .setHeader(CardService.newCardHeader().setTitle("Response"))
         .addSection(preferenceSection)
         .build();
 }
@@ -133,6 +175,37 @@ function createLabelSelectDropdown_( label, name, defaultValue) {
 }
 
 
+/**
+ * Creates a drop down for selecting an entry in the spreadsheet
+ * @param {string} label - Top label of widget
+ * @param {string} name - Key used in form submits
+ * @param {string} defaultValue - Default draft id
+ * @return {GoogleAppsScript.Card.SelectionInput}
+ * @private
+ */
+function createSpreadsheetSelectDropdown_( label, name, defaultValue) {
+
+    var sheet_data = get_spreadsheet_data().data;
+    var widget = CardService.newSelectionInput()
+        .setTitle(label)
+        .setFieldName(name)
+        .setType(CardService.SelectionInputType.DROPDOWN);
+    widget.addItem('(none)', '', defaultValue === null);
+
+    if (defaultValue) {
+        widget.addItem(defaultValue, defaultValue, defaultValue === defaultValue);
+    }
+    for (var i = 0; i < sheet_data.length; ++i) {
+        var row = sheet_data[i];
+        var text = row[0];
+        if (!text) {continue;}
+        widget.addItem(text, text, text === defaultValue);
+    }
+
+    return widget;
+}
+
+
 
 /**
  * Creates a drop down for selecting a draft
@@ -153,6 +226,8 @@ function createDraftSelectDropdown_( label, name, defaultValue,default_name) {
         .setTitle(label)
         .setFieldName(name)
         .setType(CardService.SelectionInputType.DROPDOWN);
+
+    widget.addItem('(none)', '', defaultValue === null);
 
     if (defaultValue) {
         widget.addItem(default_name, defaultValue, defaultValue === defaultValue);
@@ -352,7 +427,7 @@ function buildMainCard(e) {
 
     var card = CardService.newCardBuilder();
 
-    card.setHeader(CardService.newCardHeader().setTitle('About'));
+    card.setHeader(CardService.newCardHeader().setTitle('About Fexi Autoresponder'));
 
     card.addSection(CardService.newCardSection()
             .addWidget(CardService.newTextParagraph()
@@ -374,10 +449,35 @@ function buildMainCard(e) {
     );
 
 
-    card.addSection(CardService.newCardSection()
-            .addWidget(CardService.newTextParagraph()
-                .setText('This is where the responses will be listed '))
-        // ... add other information widgets or sections here ...
+    var edit_section = CardService.newCardSection()
+        .addWidget(CardService.newTextParagraph()
+            .setText('Click an already made response to edit. Or Create new responses '));
+
+
+    var settings = getSettingsForUser();
+    var responses = settings.responses;
+
+    if (responses.length > 0) {
+        var edit_button_set = CardService.newButtonSet();
+        for (var i = 0; i < responses.length; i++) {
+            var r = responses[i];
+            if (!r) {continue;} //if its deleted
+            edit_button_set.addButton(
+                CardService.newTextButton()
+                    .setText(r.response_name)
+                    .setOnClickAction(
+                        createAction_("editResponse", {state: i.toString()})
+                    )
+            );
+
+        }
+        edit_section.addWidget(edit_button_set);
+    }
+
+
+
+    card.addSection(
+        edit_section
     );
 
     return card.build();  // Don't forget to build the card!
@@ -389,6 +489,7 @@ function buildMainCard(e) {
  * @return {GoogleAppsScript.Card.Card}
  */
 function createMainSettingCard() {
+
 
     var settings = getSettingsForUser();
 
@@ -406,6 +507,17 @@ function createMainSettingCard() {
         .setFunctionName("handleSettingsLabelChange")
     );
 
+    var sheet_text = CardService.newTextParagraph()
+        .setText('<br>Responses can be either drafts, or items in a spreadsheet. A sheet is created automatically for this plugin. Click below to open it ');
+    var sheet_link_widget = CardService.newButtonSet().addButton(
+        CardService.newTextButton()
+            .setText("Open Spreadsheet")
+            .setOnClickAction(
+                createAction_("openSpreadsheet", {state: ''})
+            )
+        );
+
+
     return CardService.newCardBuilder()
         .setHeader(CardService.newCardHeader().setTitle('Settings'))
         .addSection(CardService.newCardSection()
@@ -419,6 +531,8 @@ function createMainSettingCard() {
                 )
             )
             .addWidget(label_widget)
+            .addWidget(sheet_text)
+            .addWidget(sheet_link_widget)
 
         ).build();   // Don't forget to build the card!
 }

@@ -28,6 +28,7 @@ function clear_settings() {
         timezone: null,
         b_is_on: false,
         lable_to_use: null,
+        sheet_id: null
     };
     if (DEBUG) {
         console.info(' cleared user settings  is ' , settings);
@@ -46,6 +47,7 @@ function getSettingsForUser() {
     timezone: null,
     b_is_on: false,
       lable_to_use: null,
+      sheet_id: null
   });
 }
 

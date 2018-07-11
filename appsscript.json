@@ -17,11 +17,12 @@
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.settings.basic",
     "https://www.googleapis.com/auth/script.locale",
-    "https://www.googleapis.com/auth/script.storage"
+    "https://www.googleapis.com/auth/script.storage",
+    "https://www.googleapis.com/auth/spreadsheets"
 
   ],
   "gmail": {
-    "name": "Responses",
+    "name": "Fexi Autoresponder",
     "logoUrl": "https://gokabam.com/respond.png",
     "contextualTriggers": [{
       "unconditional": {

@@ -1,3 +1,49 @@
+
+function get_spreadsheet_data(){
+    var settings = getSettingsForUser();
+    var sheet = null;
+    if (settings.sheet_id) {
+        try {
+            sheet = SpreadsheetApp.openById(settings.sheet_id);
+        }
+        catch(error ) {
+            if (error.toString() === 'Exception: Bad value') {
+                sheet =  SpreadsheetApp.create("Fexi Autoresponder Responses");
+            } else {
+                throw error;
+            }
+        }
+    } else {
+        sheet =  SpreadsheetApp.create("Fexi Autoresponder Responses");
+    }
+
+
+    if (!settings.sheet_id) {
+        settings.sheet_id = sheet.getId();
+        updateSettingsForUser(settings);
+    }
+
+    //redo header, just in case
+    var range = sheet.getRange("A1:C1");
+    var values = range.getValues();
+    values[0][0] = "Name";
+    values[0][1] = "Subject";
+    values[0][2] = "Body";
+    // Logger.log(values);
+    range.setValues(values);
+    var fontStyles = [
+        [ "bold", "bold", "bold" ]
+    ];
+    range.setFontWeights(fontStyles);
+    range = sheet.getRange("A2:C200");
+    values = range.getValues();
+
+    var data = {url:sheet.getUrl(),data: values};
+    return data;
+
+}
+
+
 function getLabelList() {
 
     var pageToken = null;

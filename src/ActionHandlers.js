@@ -58,6 +58,15 @@ var ActionHandlers = {
             .build();
     },
 
+    openSpreadsheet: function(e) {
+
+        var sheet_data = get_spreadsheet_data();
+        return CardService.newUniversalActionResponseBuilder()
+            .setOpenLink(CardService.newOpenLink()
+                .setUrl(sheet_data.url))
+            .build();
+    },
+
     /**
      * Shows the form to create a new response.
      * @param {Event} e - Event from Gmail
@@ -72,7 +81,52 @@ var ActionHandlers = {
         }
 
         var card =buildEditResponseCard(e,{day_of_week:'Tuesday',startHour:-1,startMinute:-1,endHour:-1,
-            endMinute: -1,thread_id:'',draft_snippit:'',state: ''});
+            endMinute: -1,thread_id:null,spreadsheet_entry:null,draft_snippit:'',slot: '',response_name:'',
+            star_action:false,labels: '',filter:''
+        });
+        return card;
+    },
+
+    deleteResponse: function(e) {
+        var settings = getSettingsForUser();
+        var responses = settings.responses;
+        var index = parseInt(e.parameters.state);
+        if (index >= 0) {
+            if (index >= responses.length) {
+                throw new Error("state has index of " + index + " but responses only have " + responses.length);
+            }
+        } else {
+            throw new Error("No state associated with the edit button");
+        }
+        settings.responses[index] = null;
+        updateSettingsForUser(settings);
+        if (DEBUG) {
+            console.info('Params for new response is ' , e);
+            console.info('response to edit is (index ) ' , index);
+        }
+        var card =buildMainCard(e);
+        return card;
+    },
+
+
+    editResponse: function(e) {
+        var settings = getSettingsForUser();
+        var responses = settings.responses;
+        var index = parseInt(e.parameters.state);
+        if (index >= 0) {
+            if (index >= responses.length) {
+                throw new Error("state has index of " + index + " but responses only have " + responses.length);
+            }
+        } else {
+            throw new Error("No state associated with the edit button");
+        }
+        var response = responses[index];
+        if (DEBUG) {
+            console.info('Params for new response is ' , e);
+            console.info('response to edit is (index , response) ' , index, response);
+        }
+
+        var card =buildEditResponseCard(e,response);
         return card;
     },
 
@@ -84,27 +138,55 @@ var ActionHandlers = {
      */
     saveResponse: function(e) {
         var settings = getSettingsForUser();
+        var responses = settings.responses;
+        var index = responses.length;
+        if (e.parameters.state !== '') {
+            index = parseInt(e.parameters.state);
+            if (index >= 0) {
+                if (index >= responses.length) {
+                    throw new Error("state has index of " + index + " but responses only have " + responses.length);
+                }
+            }
+        }
+
+
         if (DEBUG) {
             console.info('Params for new response is ' , e);
-            console.info(' old user settigns  is ' , settings);
+            console.info('old user settigns  is ' , settings);
+            console.info('thread id is  ', e.formInput.thread_id);
+            console.info('slot is  ', index);
         }
+
+
+        var draft_snippit = null;
+
+        if (e.formInput.thread_id) {
+            draft_snippit = get_draft_snippit( get_draft_info_from_thread(e.formInput.thread_id));
+        }
+
+        var star_action = !! e.formInput.star_action ;
+
 
         /**
          *
          * @type {ResponseSetting}
          */
+
+
         var response = {
             day_of_week: e.formInput.day_of_week,
-            response_name: e.formInput.response_name ? e.formInput.response_name : null ,
-            start_hour: parseInt(e.formInput.start_hour),
-            start_minute: parseInt(e.formInput.start_minute),
-            end_hour: parseInt(e.formInput.end_hour),
-            end_minute: parseInt(e.formInput.end_minute),
+            response_name: e.formInput.response_name ? e.formInput.response_name : '' ,
+            startHour: parseInt(e.formInput.start_hour),
+            startMinute: parseInt(e.formInput.start_minute),
+            endHour: parseInt(e.formInput.end_hour),
+            endMinute: parseInt(e.formInput.end_minute),
             thread_id: e.formInput.thread_id,
-            draft_snippit: get_draft_snippit( get_draft_info_from_thread(e.formInput.thread_id)),
-            filter: null,
-            star_action: null,
-            labels: null
+            spreadsheet_entry: e.formInput.spreadsheet_entry,
+            draft_snippit: draft_snippit,
+            filter: e.formInput.filter ? e.formInput.filter : '' ,
+            star_action: star_action,
+            labels: e.formInput.labels ? e.formInput.labels : '' ,
+            slot: index,
         };
 
         var error_message = validate_response(response);
@@ -114,7 +196,7 @@ var ActionHandlers = {
         } else {
             if (e.userTimezone) {
                 settings.timezone = {id:e.userTimezone.id, offset: e.userTimezone.offSet};
-                settings.responses.push(response);
+                settings.responses[index] = response;
             } else {
                 settings.timezone = {id:Session.getScriptTimeZone(), offset: null};
             }
@@ -122,7 +204,7 @@ var ActionHandlers = {
             updateSettingsForUser(settings);
 
             if (DEBUG) {
-                console.info(' new user settigns  is ' , settings);
+                console.info(' new user settings  is ' , settings);
             }
 
             var card =buildMainCard(e);
@@ -142,7 +224,22 @@ var ActionHandlers = {
  * @return {string|null}
  */
 function validate_response(response) {
-    if (!response.thread_id) {return "Need to Set a Draft"}
+    if (DEBUG) {
+        console.info('validating response ', response);
+    }
+    if (! (response.thread_id || response.spreadsheet_entry )) {return "Need to Set a Draft or a Spreadsheet Row"}
+    if ( response.thread_id && response.spreadsheet_entry ) {return "Cannot have both a Draft and a Spreadsheet Row"}
+    if ( !response.response_name ) {return "Need to have the name of the response"}
+
+    //check to see if end time less than or equal to start time
+    var start = response.startHour + (response.startMinute/100);
+    var end = response.endHour + (response.endMinute/100);
+    if (DEBUG) {
+        console.info('time of day to decimal ', start,end);
+    }
+    if (end <= start) {
+        return "The ending time needs to be later than the starting time";
+    }
     return null;
 }
 
