@@ -143,6 +143,10 @@ function filter_and_apply_response(start_at_ts,response) {
         the_filter = '';
     }
     the_filter = add_to_filter + '  ' + the_filter;
+    if (DEBUG) {
+        console.info('filter is  ' , the_filter);
+        console.info('response doing the filtering is ' , response);
+    }
     var what = getMailIDArray(the_filter);
     //get email ids and thread ids from filter results
     for(var k = 0; k < what.length; k++) {
@@ -200,6 +204,9 @@ function mail_response(response,msg_id,thread_id){
     }
 
     var headers = getHeaders(msg_id);
+    if (DEBUG) {
+        console.info('sending a reply of  to message ' + msg_id, words);
+    }
     send_reply(thread_id,headers,words.text,words.html);
 }
 
@@ -361,6 +368,9 @@ function set_labels(msg_id,response) {
 
         //add the array of label ids to the thread
         if (label_ids_to_add.length > 0) {
+            if (DEBUG) {
+                console.info('adding labels to  msg_id' + msg_id  , label_ids_to_add);
+            }
             var sentMsg = Gmail.Users.Messages.modify({
                 'addLabelIds': label_ids_to_add,
                 'removeLabelIds': []
