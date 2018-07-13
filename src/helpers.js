@@ -59,6 +59,37 @@ function get_spreadsheet_data(){
 
 }
 
+function getLabels() {
+
+    var pageToken = null;
+    var labelArray = [];
+    do {
+        // noinspection JSUnresolvedVariable
+        var labelList = Gmail.Users.Labels.list('me', {
+            pageToken: pageToken,
+        });
+
+        labelArray.push(labelList);
+        // noinspection JSUnresolvedVariable
+        pageToken = labelList.nextPageToken;
+    } while (pageToken);
+
+    var labelNames = {};
+    for (var i in labelArray) {
+        var innerArray = labelArray[i];
+
+        for(var j in innerArray.labels) {
+            if (innerArray.labels.hasOwnProperty(j)) {
+                var label = innerArray.labels[j];
+                labelNames[label.name] = label.id;
+
+            }
+        }
+
+    }
+
+    return labelNames;
+}
 
 function getLabelList() {
 
@@ -203,4 +234,12 @@ function getDraftArray() {
 
     drafts.sort(compare);
     return drafts;
+}
+
+function star_a_thread(thread_id) {
+
+}
+
+function label_a_thread(thread_id,labels) {
+
 }

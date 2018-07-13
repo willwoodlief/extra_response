@@ -150,6 +150,9 @@ function filter_and_apply_response(start_at_ts,response) {
         var msg_id = out.id;
         var thread_id = out.threadId;
         mail_response(response,msg_id,thread_id);
+        // add labels (if any set)
+        set_labels(msg_id,response);
+
     }
 
 
@@ -331,3 +334,43 @@ function getMailIDArray(query) {
 
     return ret;
 }
+
+/**
+ *
+ * @param {string} msg_id
+ * @param {ResponseSetting} response
+ */
+function set_labels(msg_id,response) {
+    if (response.labels) {
+        //check labels
+        var label_ids_to_add = [];
+        var these_labels = response.labels.split(/(\s+)/);
+        var real_labels = getLabels();
+        for(var k = 0; k < these_labels.length; k++) {
+            var a_label = these_labels[k];
+            if (real_labels.hasOwnProperty(a_label)) {
+                var label_id = real_labels[a_label];
+                label_ids_to_add.push(label_id);
+            }
+        }
+
+        //if we star it, then add it here as a label
+        if (response.star_action) {
+            label_ids_to_add.push(real_labels['STARRED']);
+        }
+
+        //add the array of label ids to the thread
+        if (label_ids_to_add.length > 0) {
+            var sentMsg = Gmail.Users.Messages.modify({
+                'addLabelIds': label_ids_to_add,
+                'removeLabelIds': []
+            }, 'me', msg_id);
+            return sentMsg;
+        }
+        return null;
+
+    }
+
+}
+
+

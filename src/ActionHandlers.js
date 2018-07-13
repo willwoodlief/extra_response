@@ -240,6 +240,20 @@ function validate_response(response) {
     if (end <= start) {
         return "The ending time needs to be later than the starting time";
     }
+
+    if (response.labels) {
+        //check labels
+        var these_labels = response.labels.split(/(\s+)/);
+        var real_labels = getLabels();
+        for(var k = 0; k < these_labels.length; k++) {
+            var a_label = these_labels[k];
+            if (!real_labels.hasOwnProperty(a_label)) {
+                return "The label of " + a_label + " does not exist yet in your gmail, please add it and refresh the page to try again"
+            }
+        }
+    }
+
+
     return null;
 }
 
