@@ -5,6 +5,7 @@ function timer_hook_call() {
         var start_ts = response.start_ts;
         filter_and_apply_response(start_ts,response);
     }
+    //todo star and label after response
 }
 
 /**
@@ -33,22 +34,27 @@ function get_replies_that_are_active() {
     }
 
 
-    var timezone = settings.timezone;
+    var timezone = settings.timezone.id;
     var responses = settings.responses;
 
     if (responses ) {
-        for(var i = 0; i > responses.length; i++) {
+        if (DEBUG) {
+            console.info("going through responses",responses.length);
+        }
+        for(var i = 0; i < responses.length; i++) {
             /**
              * {ResponseSetting} response
              */
             var response = responses[i];
             if (!response) { continue;} //null slot if deleted earlier
-            var b_is_today = is_response_on_today(response);
+            var b_is_today = is_response_on_today(response,timezone);
             if (!b_is_today) {
                 if (DEBUG) {
                     console.info("Response is not today",response);
                 }
                 continue;
+            } else {
+                console.info("Response IS today",response);
             }
             //it is today, get the translated timestamps
             var start_ts = get_ts(response.startHour,response.startMinute,timezone);
@@ -87,6 +93,7 @@ function get_replies_that_are_active() {
 /**
  *
  * @param {ResponseSetting} response
+ * @param {string} timezone
  * @return {boolean}
  */
 function is_response_on_today(response,timezone) {
@@ -138,10 +145,10 @@ function filter_and_apply_response(start_at_ts,response) {
     the_filter = add_to_filter + '  ' + the_filter;
     var what = getMailIDArray(the_filter);
     //get email ids and thread ids from filter results
-    for(var k = 0; k > what.length; k++) {
+    for(var k = 0; k < what.length; k++) {
         var out = what[k];
-        var msg_id = out[k].id;
-        var thread_id = out[0].threadId;
+        var msg_id = out.id;
+        var thread_id = out.threadId;
         mail_response(response,msg_id,thread_id);
     }
 
@@ -150,13 +157,15 @@ function filter_and_apply_response(start_at_ts,response) {
 
 
 function test() {
+    var mens = get_replies_that_are_active();
+    console.info("active replies are",mens);
 //label:inbox from:willwoodlief@live.com after: 1531434161
-    var what = getMailIDArray('label:inbox from:willwoodlief@live.com after: 1531434161');
-    var msg_id = what[0].id;
-    var thread_id = what[0].threadId;
-    var settings = getSettingsForUser();
-    var response = settings.responses[0];
-    mail_response(response,msg_id,thread_id);
+//     var what = getMailIDArray('label:inbox from:willwoodlief@live.com after: 1531434161');
+//     var msg_id = what[0].id;
+//     var thread_id = what[0].threadId;
+//     var settings = getSettingsForUser();
+//     var response = settings.responses[0];
+//     mail_response(response,msg_id,thread_id);
 }
 
 /**
