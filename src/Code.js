@@ -38,6 +38,7 @@
  * @property {boolean|null} star_action - response will star the email
  * @property {string|null} labels - response will label the email
  * @property {int|null} slot - position in the index
+ * @property {int|null} last_time_check_ts - last time this was part of an inbox check
  */
 var DEBUG = true;  // flag for adding in debugging code
 

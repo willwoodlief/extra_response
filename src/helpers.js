@@ -1,3 +1,19 @@
+/**
+ *
+ * @param {string} key
+ * @return {string|null}
+ */
+function get_spreadsheet_value(key) {
+    var sheet_data = get_spreadsheet_data().data;
+    for (var i = 0; i < sheet_data.length; i ++) {
+        var row = sheet_data[i];
+        var text = row[0];
+        if (!text) {continue;}
+        if (text === key ) {return row[2];}
+    }
+    return null;
+}
+
 
 function get_spreadsheet_data(){
     var settings = getSettingsForUser();

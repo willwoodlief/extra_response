@@ -103,7 +103,7 @@ function buildEditResponseCard(e, opts,error_response) {
 
         .addWidget(
             CardService.newTextParagraph()
-                .setText('For a response, you should pick either  <br> a draft (filtered by the label you select in settings <br> or a spreadsheet row (add to it by going to settings)')
+                .setText('For a response, you should pick either  <br> a draft <br>(filtered by the label set in settings) <br> or a spreadsheet row <br>( spreadsheet link in settings)')
         )
 
 
@@ -167,7 +167,7 @@ function createLabelSelectDropdown_( label, name, defaultValue) {
         .setTitle(label)
         .setFieldName(name)
         .setType(CardService.SelectionInputType.DROPDOWN);
-    for (var i = 0; i < labels.length; ++i) {
+    for (var i = 0; i < labels.length; i ++) {
         widget.addItem(labels[i], labels[i], labels[i] === defaultValue);
     }
 
@@ -195,7 +195,7 @@ function createSpreadsheetSelectDropdown_( label, name, defaultValue) {
     if (defaultValue) {
         widget.addItem(defaultValue, defaultValue, defaultValue === defaultValue);
     }
-    for (var i = 0; i < sheet_data.length; ++i) {
+    for (var i = 0; i < sheet_data.length; i ++) {
         var row = sheet_data[i];
         var text = row[0];
         if (!text) {continue;}
