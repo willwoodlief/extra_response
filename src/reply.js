@@ -348,7 +348,7 @@ function getMailIDArray(query) {
  * @param {ResponseSetting} response
  */
 function set_labels(msg_id,response) {
-    if (response.labels) {
+    if (response.labels || response.star_action ) {
         //check labels
         var label_ids_to_add = [];
         var these_labels = response.labels.split(/(\s+)/);
