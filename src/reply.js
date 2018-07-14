@@ -355,6 +355,7 @@ function set_labels(msg_id,response) {
         var real_labels = getLabels();
         for(var k = 0; k < these_labels.length; k++) {
             var a_label = these_labels[k];
+            if (!a_label.trim()) {continue;}
             if (real_labels.hasOwnProperty(a_label)) {
                 var label_id = real_labels[a_label];
                 label_ids_to_add.push(label_id);

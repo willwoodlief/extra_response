@@ -166,6 +166,10 @@ var ActionHandlers = {
 
         var star_action = !! e.formInput.star_action ;
 
+        var rem_last_time_check = null;
+        if (settings.responses[index]) {
+            rem_last_time_check = settings.responses[index].last_time_check_ts;
+        }
 
         /**
          *
@@ -187,6 +191,7 @@ var ActionHandlers = {
             star_action: star_action,
             labels: e.formInput.labels ? e.formInput.labels : '' ,
             slot: index,
+            last_time_check_ts: rem_last_time_check,
         };
 
         var error_message = validate_response(response);
@@ -247,6 +252,7 @@ function validate_response(response) {
         var real_labels = getLabels();
         for(var k = 0; k < these_labels.length; k++) {
             var a_label = these_labels[k];
+            if (!a_label.trim()) {continue;}
             if (!real_labels.hasOwnProperty(a_label)) {
                 return "The label of " + a_label + " does not exist yet in your gmail, please add it and refresh the page to try again"
             }
