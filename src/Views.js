@@ -27,6 +27,17 @@ function buildEditResponseCard(e, opts,error_response) {
 
     var settings = getSettingsForUser();
 
+    if (!opts || (Object.getOwnPropertyNames(opts).length === 0)) {
+        opts = {};
+    }
+
+    if (! opts.hasOwnProperty('thread_id')) {
+        opts.thread_id = null;
+    }
+
+    if (! opts.hasOwnProperty('draft_snippit')) {
+        opts.draft_snippit = '';
+    }
     var what_drafts =  createDraftSelectDropdown_( "Draft to Use", "thread_id", opts.thread_id,opts.draft_snippit);
 
     if (!what_drafts) {
@@ -58,12 +69,21 @@ function buildEditResponseCard(e, opts,error_response) {
                 .setHint("Any name will do")
                 .setValue(opts.response_name)
         )
+
         .addWidget(
             CardService.newTextInput()
                 .setFieldName("filter")
                 .setTitle("Email Filter For Response (optional)")
-                .setHint("")
+                .setHint("Gmail filter")
                 .setValue(opts.filter ? opts.filter.toString(): '')
+        )
+
+        .addWidget(
+            CardService.newTextInput()
+                .setFieldName("forward")
+                .setTitle("Forward Email to another address")
+                .setHint("Other Email Address")
+                .setValue(opts.forward ? opts.forward.toString(): '')
         )
 
         .addWidget(
@@ -457,7 +477,18 @@ function buildMainCard(e) {
     var settings = getSettingsForUser();
     var responses = settings.responses;
 
+    var has_responses = false;
     if (responses.length > 0) {
+        for (var g = 0; g < responses.length; g++) {
+            var tr = responses[g];
+            if (!tr) {
+                continue;
+            } //if its deleted
+            has_responses = true;
+        }
+    }
+
+    if (has_responses) {
         var edit_button_set = CardService.newButtonSet();
         for (var i = 0; i < responses.length; i++) {
             var r = responses[i];

@@ -35,10 +35,12 @@
  * @property {string|null} draft_snippit - the draft id to use
  * @property {string|null} spreadsheet_entry - the name of the row in the spreadsheet
  * @property {string|null} filter - response only acts if the email fits in the filter
+ * @property {string|null} forward - email address that the message is forwarded to
  * @property {boolean|null} star_action - response will star the email
  * @property {string|null} labels - response will label the email
  * @property {int|null} slot - position in the index
  * @property {int|null} last_time_check_ts - last time this was part of an inbox check
+ * @property {Object} threads_responded_to  - integer array of thread ids responded to
  */
 var DEBUG = true;  // flag for adding in debugging code
 

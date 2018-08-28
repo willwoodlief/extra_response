@@ -96,6 +96,16 @@ function normalizeEmails_(emailAddresses) {
 }
 
 /**
+ *  Tests for common email issues. Note that this is not a prefect regex but one that is used a lot in js email checking
+ * @param {string} email
+ * @return {boolean}
+ */
+function validateEmail(email) {
+    var re = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/;
+    return re.test(String(email).toUpperCase());
+}
+
+/**
  * Filters a list of email addresses to remove obvious non-user accounts.
  * @param {string[]} emailAddresses
  * @return {string[]}

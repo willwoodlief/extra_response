@@ -88,15 +88,18 @@ var ActionHandlers = {
     },
 
     deleteResponse: function(e) {
+        var card = null;
         var settings = getSettingsForUser();
         var responses = settings.responses;
         var index = parseInt(e.parameters.state);
+
         if (index >= 0) {
             if (index >= responses.length) {
                 throw new Error("state has index of " + index + " but responses only have " + responses.length);
             }
         } else {
-            throw new Error("No state associated with the edit button");
+             card =buildMainCard(e);
+            return card;
         }
         settings.responses[index] = null;
         updateSettingsForUser(settings);
@@ -104,7 +107,7 @@ var ActionHandlers = {
             console.info('Params for new response is ' , e);
             console.info('response to edit is (index ) ' , index);
         }
-        var card =buildMainCard(e);
+         card =buildMainCard(e);
         return card;
     },
 
@@ -192,6 +195,8 @@ var ActionHandlers = {
             labels: e.formInput.labels ? e.formInput.labels : '' ,
             slot: index,
             last_time_check_ts: rem_last_time_check,
+            forward : e.formInput.forward ? e.formInput.forward : '',
+            threads_responded_to: {}
         };
 
         var error_message = validate_response(response);
@@ -259,9 +264,19 @@ function validate_response(response) {
         }
     }
 
+    if (response.forward) {
+        //check if valid email format
+        if (!validateEmail(response.forward)) {
+            return "this [" +response.forward + "] is not seen as a valid email";
+        }
+    }
+
 
     return null;
 }
+
+
+
 
 function handleSettingsLabelChange(e) {
     var settings = getSettingsForUser();

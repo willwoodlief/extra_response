@@ -5,7 +5,7 @@ function timer_hook_call() {
         var start_ts = response.start_ts;
         filter_and_apply_response(start_ts,response);
     }
-    //todo star and label after response
+
 }
 
 /**
@@ -135,8 +135,7 @@ function filter_and_apply_response(start_at_ts,response) {
 
     response.last_time_check_ts = ts;
     var settings = getSettingsForUser();
-    settings.responses[response.slot] = response;
-    updateSettingsForUser(settings);
+
     var add_to_filter = "after: " + after_ts + " before: " + ts + " label:inbox is:unread ";
     var the_filter = response.filter;
     if (!the_filter) {
@@ -153,11 +152,33 @@ function filter_and_apply_response(start_at_ts,response) {
         var out = what[k];
         var msg_id = out.id;
         var thread_id = out.threadId;
-        mail_response(response,msg_id,thread_id);
+        var b_forward_only = false;
+        var headers = getHeaders(msg_id);
+        var thread_hash = headers['From'] + ' ' + headers['Subject'];
+        // only respond automatically per one thread id
+        if (! response.hasOwnProperty('threads_responded_to')) {
+            response.threads_responded_to = {};
+        } else {
+            //check to see if the thread id is a key in the hash
+            if (response.threads_responded_to.hasOwnProperty(thread_hash)) {
+                b_forward_only = true; //do not process if already replied
+                if (DEBUG) {
+                    console.info("already sent a message for this thread because of ",response.threads_responded_to,thread_hash);
+                }
+            } else {
+                if (DEBUG) {
+                    console.info("Did not find a thread from earlier in the hash ",response.threads_responded_to,thread_hash);
+                }
+            }
+        }
+        mail_response(response,msg_id,thread_id,headers,b_forward_only);
         // add labels (if any set)
         set_labels(msg_id,response);
-
+        response.threads_responded_to[thread_hash] = ts;
     }
+
+    settings.responses[response.slot] = response;
+    updateSettingsForUser(settings);
 
 
 }
@@ -180,8 +201,10 @@ function test() {
  * @param {ResponseSetting} response
  * @param {string} msg_id
  * @param {string} thread_id
+ * @param {Object} headers
+ * @param {boolean} b_forward_only
  */
-function mail_response(response,msg_id,thread_id){
+function mail_response(response,msg_id,thread_id,headers,b_forward_only){
     if (!response) {
         //response does not have a spreadsheet or a draft
         console.warn('response was null ' , response);
@@ -203,12 +226,31 @@ function mail_response(response,msg_id,thread_id){
         return;
     }
 
-    var headers = getHeaders(msg_id);
-    if (DEBUG) {
-        console.info('sending a reply of  to message ' + msg_id, words);
+
+
+    if (!b_forward_only) {
+        if (DEBUG) {
+            console.info('getting ready to send a reply to message: ' + msg_id, words);
+        }
+        send_reply(null,thread_id,headers,words.text,words.html);
+    } else {
+        if (DEBUG) {
+            console.info('not sending a reply to the message because already sent on thread ' + msg_id);
+        }
+        words = {text:"Did not respond, already auto replied earlier",hmtl:"Did not respond, already auto replied earlier"};
     }
-    send_reply(thread_id,headers,words.text,words.html);
+
+
+    if (response.forward) {
+        //add in earlier message text and html mail body
+        if (DEBUG) {
+            console.info('sending a forward of  message ' + msg_id, words);
+        }
+        forward_message(response.forward,msg_id,headers);
+    }
 }
+
+
 
 
 function get_draft_body_from_thread(thread_id) {
@@ -244,14 +286,120 @@ function get_draft_body_from_thread(thread_id) {
     return ret;
 }
 
-function send_reply(thread_id,headers,text,html) {
+/**
+ *
+ * @param {string} msg_id
+ * @return array of {mime,decoded}
+ */
+function get_email_parts(msg_id) {
+    function ascii_array_to_string(array) {
+        var result = "";
+        for (var i = 0; i < array.length; i++) {
+            result += String.fromCharCode(parseInt(array[i]));
+        }
+        return result;
+    }
+
+    if (!msg_id) {return null;}
+    // noinspection JSUnresolvedVariable
+    var msg = Gmail.Users.Messages.get("me", msg_id, {format: "full"});
+    var payload = msg.payload;
+    var headers = payload.headers;
+    if(DEBUG) {
+        console.info("api payload stuff for message " + msg_id,payload);
+    }
+    var parts = payload.parts;
+    //Logger.log('headers');
+    //  Logger.log(headers);
+    //Logger.log('parts');
+    // Logger.log(parts);
+    var ret = [];
+    while (parts.length) {
+        var part = parts.shift();
+        if (part.parts) {
+            parts = parts.concat(part.parts);
+        }
+        if (part.body.data) {
+            // Logger.log('part');
+            // Logger.log(part);
+            ret.push( {'mime' : part.mimeType, 'decoded' : ascii_array_to_string(part.body.data) } );
+        }
+
+
+    }
+    if (ret.length === 0 ) {
+        var body_data = payload.body.data;
+        var body_mime = payload.mimeType;
+        ret.push( {'mime' : body_mime, 'decoded' : ascii_array_to_string(body_data) } );
+    }
+    return ret;
+}
+
+/**
+ *
+ * @param {string} email_to
+ * @param {string} msg_id
+ * @param headers
+ * @return {GoogleAppsScript.Gmail.GmailMessage | * | void}
+ */
+function forward_message(email_to,msg_id,headers) {
 
     var separator = "\n";
     var boundaryHL = 'cHJvZ3JhbW1lciB3aWxsd29vZGxpZWZAZ21haWwuY29t';
     var rows = [];
     rows.push('Subject: ' + headers['Subject']);
     rows.push('From: ' + Session.getActiveUser().getEmail());
-    rows.push('To: ' + headers['From']);
+    if (email_to) {
+        rows.push('To: ' + email_to);
+    } else {
+        rows.push('To: ' + headers['From']);
+    }
+
+    rows.push('In-Reply-To: ' + headers['From']);
+    rows.push('References: ' + headers['Message-ID']);
+    rows.push('Content-Type: multipart/alternative; boundary=' + boundaryHL + separator);
+    var parts = get_email_parts(msg_id);
+    if (DEBUG) {
+        console.info('forwarded headers: ',headers);
+        console.info('parts of  ' + msg_id, parts);
+    }
+    for(var p in parts) {
+        var part = parts[p];
+        var content_type = part.mime;
+        var content_data = part.decoded;
+        rows.push('--' + boundaryHL);
+        rows.push('Content-Type: '+content_type+'; charset=UTF-8');
+        rows.push('Content-Transfer-Encoding: quoted-printable' + separator);
+        rows.push(quotedPrintable.encode(utf8.encode(content_data)));
+    }
+
+    rows.push('--' + boundaryHL + '--');
+
+    var da_text = rows.join(separator);
+    var raw = Utilities.base64EncodeWebSafe(da_text);
+
+
+
+    var message = Gmail.newMessage();
+    message.raw = raw;
+    var sentMsg = Gmail.Users.Messages.send(message, "me");
+    // {threadId=164909756ff83088, labelIds=[SENT], id=16490bd4a58e5fe3}
+    return sentMsg;
+}
+
+function send_reply(email_to,thread_id,headers,text,html) {
+
+    var separator = "\n";
+    var boundaryHL = 'cHJvZ3JhbW1lciB3aWxsd29vZGxpZWZAZ21haWwuY29t';
+    var rows = [];
+    rows.push('Subject: ' + headers['Subject']);
+    rows.push('From: ' + Session.getActiveUser().getEmail());
+    if (email_to) {
+        rows.push('To: ' + email_to);
+    } else {
+        rows.push('To: ' + headers['From']);
+    }
+
     rows.push('In-Reply-To: ' + headers['From']);
     rows.push('References: ' + headers['Message-ID']);
     rows.push('Content-Type: multipart/alternative; boundary=' + boundaryHL + separator);

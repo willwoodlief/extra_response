@@ -152,6 +152,16 @@ function get_draft_info(msg_id) {
     return info;
 }
 
+function get_email_body(msg_id) {
+    if (!msg_id) {return null;}
+    // noinspection JSUnresolvedVariable
+    var msg = Gmail.Users.Messages.get("me", msg_id, {format: "full"});
+    var payload = msg.payload;
+    var body = payload.body;
+    return Utilities.base64DecodeWebSafe(body.data);
+
+}
+
 function get_draft_info_from_thread(thread_id) {
     if (!thread_id) {return null;}
     // noinspection JSUnresolvedVariable
