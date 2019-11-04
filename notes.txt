@@ -1,2 +1,20 @@
-1ImXUDHQC89KXHwh9tlxZdQ9DufNLI-YXwFWfHeLktNQk8tjZ5xIvPZiz is my project
-1OezSty9VG5T1-S1CoJEzwxy5HneAXPrxNwUL7z5UJRsshjoX6TCAREkH  is remote project
+
+
+version 1.3 changes
+
+Reply.js line 450, change the rows.push('To: ' + headers['From']); to only use the first email address in the from header
+Reply.js line 174, look for all variants of donotreply in the from address, and skip replying
+Remember each sender, by itself, and if the same sender responds again within 1 hour, do not reply again
+
+
+
+https://script.google.com/home/executions
+https://script.google.com/d/14ycGz7ukKzGNR4sR00-rnLZS56u-B4rbcVRbFv9LnV_fIv1XWCO74JQ1/edit?usp=sharing_eip&ts=5d935594
+https://mail.google.com/mail/u/0/?hl=en#settings/addons
+
+
+client live
+{"scriptId":"1OezSty9VG5T1-S1CoJEzwxy5HneAXPrxNwUL7z5UJRsshjoX6TCAREkH"}
+
+my staging and copy
+{"scriptId":"14ycGz7ukKzGNR4sR00-rnLZS56u-B4rbcVRbFv9LnV_fIv1XWCO74JQ1"}
