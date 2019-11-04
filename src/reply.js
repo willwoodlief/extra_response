@@ -5,6 +5,9 @@ function timer_hook_call() {
         var start_ts = response.start_ts;
         filter_and_apply_response(start_ts,response);
     }
+    if (DEBUG) {
+      console.info("Finished processing. No of active responses : " + responses.length.toString());
+    }
 
 }
 
@@ -34,7 +37,11 @@ function get_replies_that_are_active() {
     }
 
 
-    var timezone = settings.timezone.id;
+    var timezone = null;
+    if (settings.timezone) {
+        timezone = settings.timezone.id;
+    }
+
     var responses = settings.responses;
 
     if (responses ) {
@@ -47,6 +54,12 @@ function get_replies_that_are_active() {
              */
             var response = responses[i];
             if (!response) { continue;} //null slot if deleted earlier
+            if (!timezone) {
+                if (response.timezone) {
+                    timezone = response.timezone;
+                }
+
+            }
             var b_is_today = is_response_on_today(response,timezone);
             if (!b_is_today) {
                 if (DEBUG) {
@@ -125,12 +138,21 @@ function filter_and_apply_response(start_at_ts,response) {
     if (!response.last_time_check_ts) {
         response.last_time_check_ts = 0;
     }
-    var after_ts = null;
-    if (response.last_time_check_ts < start_at_ts ) {
-        after_ts = start_at_ts;
-    }  else {
-        after_ts = response.last_time_check_ts;
+  
+    var after_ts = start_at_ts;
+
+//    var after_ts = null;
+//    if (response.last_time_check_ts < start_at_ts ) {
+//        after_ts = start_at_ts;
+//    }  else {
+//        after_ts = response.last_time_check_ts;
+//    }
+  
+    if (DEBUG) {
+        console.info('last_time_check_ts is  ' , response.last_time_check_ts);
+        console.info('start_at_ts is  ' , start_at_ts);
     }
+  
     var ts = Math.round((new Date()).getTime() / 1000);
 
     response.last_time_check_ts = ts;
@@ -155,20 +177,100 @@ function filter_and_apply_response(start_at_ts,response) {
         var b_forward_only = false;
         var headers = getHeaders(msg_id);
         var thread_hash = headers['From'] + ' ' + headers['Subject'];
-        // only respond automatically per one thread id
-        if (! response.hasOwnProperty('threads_responded_to')) {
-            response.threads_responded_to = {};
+
+        //@version 1.3 do not reply if  noreply,no-reply is anywhere in the from headers
+        var test_from = headers['From'];
+        if (!(typeof test_from === 'string' || test_from instanceof String) ) {
+            if (Array.isArray(test_from)) {
+                test_from = test_from.join(',');
+            } else  {
+                test_from += '';
+            }
+        }
+
+        function test_no_response(s) {
+            var arr = [
+                'noreply',
+                'no-reply',
+                'do-not-reply',
+                'dontreply'
+            ];
+
+            for(var i = 0; i < arr.length; i++) {
+                var test = arr[i];
+                if (s.indexOf(test) !== -1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        var is_no_response = test_no_response(test_from);
+        if ( is_no_response) {
+            b_forward_only = true;
+            if (DEBUG) {
+                console.info("FROM address has a no response, will not reply ", test_from);
+            }
         } else {
-            //check to see if the thread id is a key in the hash
-            if (response.threads_responded_to.hasOwnProperty(thread_hash)) {
-                b_forward_only = true; //do not process if already replied
+
+            // only respond automatically per one thread id
+            if (!response.hasOwnProperty('threads_responded_to')) {
+                response.threads_responded_to = {};
                 if (DEBUG) {
-                    console.info("already sent a message for this thread because of ",response.threads_responded_to,thread_hash);
+                    console.info("never seen any threads in this response, so this is first email processed for it. Ok to send ");
                 }
             } else {
-                if (DEBUG) {
-                    console.info("Did not find a thread from earlier in the hash ",response.threads_responded_to,thread_hash);
+                //check to see if the thread id is a key in the hash
+                if (response.threads_responded_to.hasOwnProperty(thread_hash)) {
+                    b_forward_only = true; //do not process if already replied
+                    if (DEBUG) {
+                        console.info("already sent a message for this thread because of ", response.threads_responded_to, thread_hash);
+                    }
+                } else {
+                    if (DEBUG) {
+                        console.info("Did not find a thread from earlier in the hash ", response.threads_responded_to, thread_hash);
+                    }
                 }
+            }
+
+            if (!response.hasOwnProperty('senders_responded_to')) {
+                response.senders_responded_to = {};
+                response.senders_responded_to[test_from] = ts;
+                if (DEBUG) {
+                    console.info("No senders ever registered for this response,  allowing email to be sent ",response.senders_responded_to);
+                }
+            } else {
+
+                if (response.senders_responded_to.hasOwnProperty(test_from)) {
+                    var last_send_ts = response.senders_responded_to[test_from];
+                    if (typeof last_send_ts === 'string' || last_send_ts instanceof String) {
+                        last_send_ts = parseInt(last_send_ts);
+                    }
+                    if (!Date.now) {
+                        Date.now = function() { return new Date().getTime(); }
+                    }
+                    var now_ts = Math.floor(Date.now() / 1000);
+                    var diff = now_ts - last_send_ts;
+
+                    if ( diff < 3600 ) {
+                        if (DEBUG) {
+                            console.info("Cannot send a response. We last replied to this sender at  " + last_send_ts + " which is less than an hour using the current timestamp of " + now_ts + " difference in seconds is " + diff ,response.senders_responded_to);
+                        }
+                        b_forward_only = true; //do not process if already replied to in the last hour
+                    } else {
+                        if (DEBUG) {
+                            console.info("Sending okay so far. We last replied to this sender at  " + last_send_ts + " which is MORE than an hour using the current timestamp of " + now_ts + " difference in seconds is " + diff ,response.senders_responded_to);
+                        }
+                        response.senders_responded_to[test_from] = ts;
+                    }
+                } else {
+                    response.senders_responded_to[test_from] = ts;
+                    if (DEBUG) {
+                        console.info("Sender does not have an entry yet in the senders_responded_to hash, will add it now   "
+                            ,response.senders_responded_to);
+                    }
+                }
+
             }
         }
         mail_response(response,msg_id,thread_id,headers,b_forward_only);
@@ -176,9 +278,21 @@ function filter_and_apply_response(start_at_ts,response) {
         set_labels(msg_id,response);
         response.threads_responded_to[thread_hash] = ts;
     }
+  
+    if (DEBUG) {
+        console.info('slot is ',response.slot);
+        console.info('response before update is ',settings.responses[response.slot]);
+
+    }
 
     settings.responses[response.slot] = response;
     updateSettingsForUser(settings);
+    if (DEBUG) {
+        console.info('response value is ',response);
+        console.info('response after update is ',settings.responses[response.slot]);
+        console.info('last_time_check_ts is  ' , response.last_time_check_ts);
+        console.info('settings is  ' , settings);
+    }
 
 
 }
@@ -347,8 +461,17 @@ function forward_message(email_to,msg_id,headers) {
     var separator = "\n";
     var boundaryHL = 'cHJvZ3JhbW1lciB3aWxsd29vZGxpZWZAZ21haWwuY29t';
     var rows = [];
+    var email_from = headers['Delivered-To']
     rows.push('Subject: ' + headers['Subject']);
-    rows.push('From: ' + Session.getActiveUser().getEmail());
+    if(email_from)
+    {
+      rows.push('From: ' + email_from);
+    }
+    else{
+      rows.push('From: ' + Session.getActiveUser().getEmail());   
+      //      rows.push('From: ' + Session.geteffectiveUser().getEmail());     
+
+    }
     if (email_to) {
         rows.push('To: ' + email_to);
     } else {
@@ -389,15 +512,35 @@ function forward_message(email_to,msg_id,headers) {
 
 function send_reply(email_to,thread_id,headers,text,html) {
 
+  
+    if (DEBUG) {
+      console.info('reply headers is : ',headers);
+      console.info('email_to is : ',email_to);
+
+    }
+  
     var separator = "\n";
     var boundaryHL = 'cHJvZ3JhbW1lciB3aWxsd29vZGxpZWZAZ21haWwuY29t';
     var rows = [];
+    var email_from = headers['Delivered-To']
+    
     rows.push('Subject: ' + headers['Subject']);
-    rows.push('From: ' + Session.getActiveUser().getEmail());
+    if(email_from)
+    {
+      rows.push('From: ' + email_from);
+    }
+    else{
+      rows.push('From: ' + Session.getActiveUser().getEmail());   
+      //      rows.push('From: ' + Session.geteffectiveUser().getEmail());     
+
+    }
     if (email_to) {
         rows.push('To: ' + email_to);
     } else {
         rows.push('To: ' + headers['From']);
+    }
+    if (DEBUG) {
+        console.info('email from is ',headers['From']);
     }
 
     rows.push('In-Reply-To: ' + headers['From']);
@@ -531,5 +674,3 @@ function set_labels(msg_id,response) {
     }
 
 }
-
-

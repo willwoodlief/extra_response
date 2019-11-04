@@ -26,6 +26,9 @@ var ActionHandlers = {
    */
     showMain: function(e) {
         var settings = getSettingsForUser();
+      
+// Need ScriptApp OAUTH permission to create automatic triggers. Currently not supported in Gmail Addons
+//        init_trigger();
 
         var message = getCurrentMessage(e);
 
@@ -53,6 +56,7 @@ var ActionHandlers = {
         }
 
         var card = createMainSettingCard();
+//        return card;
         return CardService.newUniversalActionResponseBuilder()
             .displayAddOnCards([card])
             .build();
@@ -77,7 +81,7 @@ var ActionHandlers = {
         getCurrentMessage(e);
         if (DEBUG) {
             console.info('Params for new response is ' , e);
-            console.info('user settigns  is ' , settings);
+            console.info('user settings that are used in creating this new response  is ' , settings);
         }
 
         var card =buildEditResponseCard(e,{day_of_week:'Tuesday',startHour:-1,startMinute:-1,endHour:-1,
@@ -92,6 +96,11 @@ var ActionHandlers = {
         var settings = getSettingsForUser();
         var responses = settings.responses;
         var index = parseInt(e.parameters.state);
+        
+       if (DEBUG) {
+            console.info('Params for deleted response is ' , e);
+            console.info('response to edit is (index ) ' , index);
+        }
 
         if (index >= 0) {
             if (index >= responses.length) {
@@ -103,10 +112,7 @@ var ActionHandlers = {
         }
         settings.responses[index] = null;
         updateSettingsForUser(settings);
-        if (DEBUG) {
-            console.info('Params for new response is ' , e);
-            console.info('response to edit is (index ) ' , index);
-        }
+
          card =buildMainCard(e);
         return card;
     },
@@ -124,8 +130,9 @@ var ActionHandlers = {
             throw new Error("No state associated with the edit button");
         }
         var response = responses[index];
+        response.slot = index;
         if (DEBUG) {
-            console.info('Params for new response is ' , e);
+            console.info('Params for edit response is ' , e);
             console.info('response to edit is (index , response) ' , index, response);
         }
 
@@ -154,8 +161,8 @@ var ActionHandlers = {
 
 
         if (DEBUG) {
-            console.info('Params for new response is ' , e);
-            console.info('old user settigns  is ' , settings);
+            console.info('Params for save response is ' , e);
+            console.info('old user settings  is ' , settings);
             console.info('thread id is  ', e.formInput.thread_id);
             console.info('slot is  ', index);
         }
@@ -196,14 +203,22 @@ var ActionHandlers = {
             slot: index,
             last_time_check_ts: rem_last_time_check,
             forward : e.formInput.forward ? e.formInput.forward : '',
-            threads_responded_to: {}
+            threads_responded_to: {},
+            senders_responded_to: {}
         };
+      
+        if (e.parameters.state === '') {
+          response.slot = '';
+        }
 
         var error_message = validate_response(response);
         if (error_message) {
             var do_again_card =buildEditResponseCard(e,response,error_message);
             return do_again_card;
         } else {
+            if (e.parameters.state === '') {
+                   response.slot = index;
+            }
             if (e.userTimezone) {
                 settings.timezone = {id:e.userTimezone.id, offset: e.userTimezone.offSet};
                 settings.responses[index] = response;
@@ -211,11 +226,13 @@ var ActionHandlers = {
                 settings.timezone = {id:Session.getScriptTimeZone(), offset: null};
             }
 
+            if (DEBUG) {
+                console.info(' updating user settings ' , settings);
+            }
+            
             updateSettingsForUser(settings);
 
-            if (DEBUG) {
-                console.info(' new user settings  is ' , settings);
-            }
+
 
             var card =buildMainCard(e);
             return card;

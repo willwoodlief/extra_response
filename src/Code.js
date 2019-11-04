@@ -41,6 +41,7 @@
  * @property {int|null} slot - position in the index
  * @property {int|null} last_time_check_ts - last time this was part of an inbox check
  * @property {Object} threads_responded_to  - integer array of thread ids responded to
+ * @property {?Object} senders_responded_to  - string hash of senders replied to, with timestamp
  */
 var DEBUG = true;  // flag for adding in debugging code
 

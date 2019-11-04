@@ -416,7 +416,7 @@ function createAboutCard() {
 
     card.addSection(CardService.newCardSection()
             .addWidget(CardService.newTextParagraph()
-                .setText('This add-on allows multiple responses to be be set for each day, and is only on when vacation mode is off '))
+                .setText('This add-on (version 1.3.5.004) allows multiple responses to be be set for each day, and is only on when vacation mode is off '))
         // ... add other information widgets or sections here ...
     );
 
@@ -451,7 +451,8 @@ function buildMainCard(e) {
 
     card.addSection(CardService.newCardSection()
             .addWidget(CardService.newTextParagraph()
-                .setText('This add-on allows multiple responses to be be set for each day, and is only on when vacation mode is off '))
+                .setText('This add-on allows multiple responses to be be set for each day, and is only on when vacation mode is off. '
+                    + " Version 1.3.5.004 Last changed on October 2,2019"))
         // ... add other information widgets or sections here ...
     );
 
@@ -523,6 +524,11 @@ function createMainSettingCard() {
 
 
     var settings = getSettingsForUser();
+  
+//      return CardService.newCardBuilder()
+//        .setHeader(CardService.newCardHeader().setTitle('Settings'))
+//        .addSection(CardService.newCardSection() 
+//        ).build(); 
 
     var labels = getLabelList();
     var label_widget = CardService.newSelectionInput()

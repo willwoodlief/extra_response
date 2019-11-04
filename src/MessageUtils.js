@@ -25,7 +25,7 @@ function getCurrentMessage(event) {
       if (messageId) {
           var message =  GmailApp.getMessageById(messageId);
           if (DEBUG) {
-              console.info("from message: ",message.getFrom());
+              console.info("current from message used in settings: ",message.getFrom());
           }
           return message;
       } else {
