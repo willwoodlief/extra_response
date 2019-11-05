@@ -456,9 +456,15 @@ function buildMainCard(e) {
     if (bytes_of_storage > MAX_ALLOWED_SETTING_SIZE) {
         extra_size_message = ' Responders will not be turned on because the user settings size of ' + bytes_of_storage + ' is greater than '+ MAX_ALLOWED_SETTING_SIZE +  " . Allow the remembered history to be removed, over the hours, as it ages out. If you do not want to wait, you can  remove a heavily used response and create it again" ;
     } else {
-      //  var percent_used = Math.round(bytes_of_storage/MAX_ALLOWED_SETTING_SIZE * 100); //todo change back to this after limits are known
-        var percent_used = Math.round(bytes_of_storage/9000 * 100);
-        normal_size_message = "Stored Memory is "+ percent_used +"% Filled ";
+        var percent_used;
+        if (B_USE_NEW_HASHES) {
+            percent_used = Math.round(bytes_of_storage/MAX_ALLOWED_SETTING_SIZE * 100);
+            normal_size_message = "Stored Memory is "+ percent_used +"% Filled ";
+        } else {
+            percent_used = Math.round(bytes_of_storage/9000 * 100);
+            normal_size_message = "Testing: Estimated Stored Memory is "+ percent_used +"% Filled. Tell willwoodlief@gmail.com what this is ";
+        }
+
     }
 
     card.addSection(CardService.newCardSection()

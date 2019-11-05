@@ -29,11 +29,11 @@
  * @param {string} input The value to hash.
  * @param {boolean} isShortMode Set true for 4 digit shortend hash, else returns usual MD5 hash.
  * @return {string} The hashed input
- * @customfunction
  *
  */
 function MD5( input, isShortMode )
 {
+    if (!B_USE_NEW_HASHES) {return input;}
     var txtHash = '';
     var rawHash = Utilities.computeDigest(
         Utilities.DigestAlgorithm.MD5,

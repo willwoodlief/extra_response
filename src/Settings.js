@@ -24,6 +24,8 @@ var THREAD_LIFE_IN_DAYS = 2;
 
 var MAX_ALLOWED_SETTING_SIZE = 480000;
 
+var B_USE_NEW_HASHES = false;
+
 
 /**
  * clear settings to default again
@@ -62,15 +64,16 @@ function getSettingsForUser() {
       added_trigger: null
   });
 
-  //   log_me('start dump (v3) of original settings');
-  //   log_me(JSON.stringify(settings));
-  //   log_me('end dump (v3) of original settings');
-  //
-   var new_settings = trim_and_convert_settings(settings);
-  //   log_me('start dump (v3) of new settings');
-  //   log_me(JSON.stringify(new_settings));
-  //   log_me('end dump (v3) of new settings');
-  return new_settings;
+
+  if (B_USE_NEW_HASHES) {
+      var new_settings = trim_and_convert_settings(settings);
+      return new_settings;
+  } else {
+      return settings;
+  }
+
+
+
 }
 
 /**
