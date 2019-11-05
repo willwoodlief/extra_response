@@ -24,6 +24,22 @@
  */
 
 /**
+ * @typedef {Object} ResponseTimezone
+ * @property {string} id  - example "America/Chicago",
+ * @property {number} offset  -  example -21600000"
+ */
+
+/**
+ * @typedef {Object} UserSettings
+ * @property {?ResponseSetting[]}  responses,
+ * @property {?ResponseTimezone} timezone
+ * @property {boolean} b_is_on
+ * @property {?string} lable_to_use
+ * @property {?number} sheet_id
+ * @property {?boolean} added_trigger
+ */
+
+/**
  * @typedef {Object} ResponseSetting
  * @property {string|null} day_of_week - One of [Monday..Sunday]
  * @property {number|null} startHour - start hour (0-23)

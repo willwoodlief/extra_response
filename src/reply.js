@@ -20,7 +20,18 @@ function get_replies_that_are_active() {
     var ret = [];
     //if plugin off then return
     var settings = getSettingsForUser();
-    if (!settings.b_is_on) {
+
+    //test to see if settings is too big
+    var bytes_of_storage = get_byte_size_of_object(settings);
+    var b_force_off = false;
+    if (bytes_of_storage > MAX_ALLOWED_SETTING_SIZE) {
+        b_force_off = true;
+        if (DEBUG) {
+            console.info("Forcing setting to off because the user settings size of " + bytes_of_storage + " is greater than "+ MAX_ALLOWED_SETTING_SIZE);
+        }
+    }
+
+    if ((!settings.b_is_on) || b_force_off) {
         if (DEBUG) {
             console.info("Settings are turned off, no email processed");
         }
@@ -176,8 +187,8 @@ function filter_and_apply_response(start_at_ts,response) {
         var thread_id = out.threadId;
         var b_forward_only = false;
         var headers = getHeaders(msg_id);
-        var thread_hash = headers['From'] + ' ' + headers['Subject'];
-
+        var thread_hash_string = headers['From'] + ' ' + headers['Subject'];
+        var thread_hash = MD5(thread_hash_string,false);
         //@version 1.3 do not reply if  noreply,no-reply is anywhere in the from headers
         var test_from = headers['From'];
         if (!(typeof test_from === 'string' || test_from instanceof String) ) {
@@ -224,25 +235,26 @@ function filter_and_apply_response(start_at_ts,response) {
                 if (response.threads_responded_to.hasOwnProperty(thread_hash)) {
                     b_forward_only = true; //do not process if already replied
                     if (DEBUG) {
-                        console.info("already sent a message for this thread because of ", response.threads_responded_to, thread_hash);
+                        console.info("already sent a message for this thread because of ", response.threads_responded_to, thread_hash,thread_hash_string);
                     }
                 } else {
                     if (DEBUG) {
-                        console.info("Did not find a thread from earlier in the hash ", response.threads_responded_to, thread_hash);
+                        console.info("Did not find a thread from earlier in the hash ", response.threads_responded_to, thread_hash,thread_hash_string);
                     }
                 }
             }
 
+            var test_from_hash = MD5(test_from,false);
             if (!response.hasOwnProperty('senders_responded_to')) {
                 response.senders_responded_to = {};
-                response.senders_responded_to[test_from] = ts;
+                response.senders_responded_to[test_from_hash] = ts;
                 if (DEBUG) {
                     console.info("No senders ever registered for this response,  allowing email to be sent ",response.senders_responded_to);
                 }
             } else {
 
-                if (response.senders_responded_to.hasOwnProperty(test_from)) {
-                    var last_send_ts = response.senders_responded_to[test_from];
+                if (response.senders_responded_to.hasOwnProperty(test_from_hash)) {
+                    var last_send_ts = response.senders_responded_to[test_from_hash];
                     if (typeof last_send_ts === 'string' || last_send_ts instanceof String) {
                         last_send_ts = parseInt(last_send_ts);
                     }
@@ -261,10 +273,10 @@ function filter_and_apply_response(start_at_ts,response) {
                         if (DEBUG) {
                             console.info("Sending okay so far. We last replied to this sender at  " + last_send_ts + " which is MORE than an hour using the current timestamp of " + now_ts + " difference in seconds is " + diff ,response.senders_responded_to);
                         }
-                        response.senders_responded_to[test_from] = ts;
+                        response.senders_responded_to[test_from_hash] = ts;
                     }
                 } else {
-                    response.senders_responded_to[test_from] = ts;
+                    response.senders_responded_to[test_from_hash] = ts;
                     if (DEBUG) {
                         console.info("Sender does not have an entry yet in the senders_responded_to hash, will add it now   "
                             ,response.senders_responded_to);
@@ -461,7 +473,7 @@ function forward_message(email_to,msg_id,headers) {
     var separator = "\n";
     var boundaryHL = 'cHJvZ3JhbW1lciB3aWxsd29vZGxpZWZAZ21haWwuY29t';
     var rows = [];
-    var email_from = headers['Delivered-To']
+    var email_from = headers['Delivered-To'];
     rows.push('Subject: ' + headers['Subject']);
     if(email_from)
     {
@@ -522,7 +534,7 @@ function send_reply(email_to,thread_id,headers,text,html) {
     var separator = "\n";
     var boundaryHL = 'cHJvZ3JhbW1lciB3aWxsd29vZGxpZWZAZ21haWwuY29t';
     var rows = [];
-    var email_from = headers['Delivered-To']
+    var email_from = headers['Delivered-To'];
     
     rows.push('Subject: ' + headers['Subject']);
     if(email_from)

@@ -416,7 +416,7 @@ function createAboutCard() {
 
     card.addSection(CardService.newCardSection()
             .addWidget(CardService.newTextParagraph()
-                .setText('This add-on (version 1.3.5.004) allows multiple responses to be be set for each day, and is only on when vacation mode is off '))
+                .setText('This add-on (version '+CURRENT_VERSION+' Last Changed on '+ LAST_CHANGED_ON +' ) allows multiple responses to be be set for each day, and is only on when vacation mode is off '))
         // ... add other information widgets or sections here ...
     );
 
@@ -444,17 +444,39 @@ function buildMainCard(e) {
     // have a link to create a new response
     // list an edit button for each saved response, organized by day of week
 
-
+    var settings = getSettingsForUser();
     var card = CardService.newCardBuilder();
 
     card.setHeader(CardService.newCardHeader().setTitle('About Fexi Autoresponder'));
 
+    //test to see if settings is too big
+    var bytes_of_storage = get_byte_size_of_object(settings);
+    var extra_size_message = '';
+    var normal_size_message = '';
+    if (bytes_of_storage > MAX_ALLOWED_SETTING_SIZE) {
+        extra_size_message = ' Responders will not be turned on because the user settings size of ' + bytes_of_storage + ' is greater than '+ MAX_ALLOWED_SETTING_SIZE +  " . Allow the remembered history to be removed, over the hours, as it ages out. If you do not want to wait, you can  remove a heavily used response and create it again" ;
+    } else {
+      //  var percent_used = Math.round(bytes_of_storage/MAX_ALLOWED_SETTING_SIZE * 100); //todo change back to this after limits are known
+        var percent_used = Math.round(bytes_of_storage/9000 * 100);
+        normal_size_message = "Stored Memory is "+ percent_used +"% Filled ";
+    }
+
     card.addSection(CardService.newCardSection()
             .addWidget(CardService.newTextParagraph()
                 .setText('This add-on allows multiple responses to be be set for each day, and is only on when vacation mode is off. '
-                    + " Version 1.3.5.004 Last changed on October 2,2019"))
+                    + " Version "+CURRENT_VERSION+" Last changed on " + LAST_CHANGED_ON))
         // ... add other information widgets or sections here ...
     );
+
+    if (extra_size_message) {
+        card.addSection(CardService.newCardSection().addWidget(CardService.newTextParagraph().setText(extra_size_message)));
+    }
+
+    if (normal_size_message) {
+        card.addSection(CardService.newCardSection().addWidget(CardService.newTextParagraph().setText(normal_size_message)));
+    }
+
+
 
     card.addSection(CardService.newCardSection()
 
@@ -475,7 +497,7 @@ function buildMainCard(e) {
             .setText('Click an already made response to edit. Or Create new responses '));
 
 
-    var settings = getSettingsForUser();
+
     var responses = settings.responses;
 
     var has_responses = false;

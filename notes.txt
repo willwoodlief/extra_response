@@ -9,12 +9,63 @@ Remember each sender, by itself, and if the same sender responds again within 1 
 
 
 https://script.google.com/home/executions
-https://script.google.com/d/14ycGz7ukKzGNR4sR00-rnLZS56u-B4rbcVRbFv9LnV_fIv1XWCO74JQ1/edit?usp=sharing_eip&ts=5d935594
 https://mail.google.com/mail/u/0/?hl=en#settings/addons
 
+
+clasp currently set to my copy
 
 client live
 {"scriptId":"1OezSty9VG5T1-S1CoJEzwxy5HneAXPrxNwUL7z5UJRsshjoX6TCAREkH"}
 
+web editT1-S1CoJEzwxy5HneAXPrxNwUL7z5UJRsshjoX6TCAREkH/edit client https://script.google.com/d/1OezSty9VG5
+
+
 my staging and copy
 {"scriptId":"14ycGz7ukKzGNR4sR00-rnLZS56u-B4rbcVRbFv9LnV_fIv1XWCO74JQ1"}
+
+web edit mine https://script.google.com/d/14ycGz7ukKzGNR4sR00-rnLZS56u-B4rbcVRbFv9LnV_fIv1XWCO74JQ1/edit
+
+---------------------------------------------------------------------------------------------------------------------
+Property size and checking:
+
+Properties value size	9kB / val
+Properties total storage	500kB
+
+https://www.oreilly.com/library/view/going-gas/9781491940457/ch04.html
+
+has an exponential back off function, it includes the things to check which I listed below. But its a wrap around calling to a service that may be rate limited
+
+
+utils.tryAgain = "force backoff anyway";
+utils.backoffErrors = [
+  "Exception: Service invoked too many times",
+  "Exception: Rate Limit Exceeded",
+  "Exception: Quota Error: User Rate Limit Exceeded",
+  "Service error: Spreadsheets",
+  "Exception: User rate limit exceeded",
+  "Exception: Internal error. Please try again.",
+  "Exception: Cannot execute AddColumn because another task",
+  "Service invoked too many times in a short time:",
+  "Exception: Internal error.",
+  "Exception: Превышен лимит: DriveApp.",
+  utils.tryAgain
+];
+
+
+md5 looks supported at https://developers.google.com/apps-script/reference/utilities/utilities#computeDigest
+see https://gist.github.com/KEINOS/78cc23f37e55e848905fc4224483763d and
+https://stackoverflow.com/questions/16216868/get-back-a-string-representation-from-computedigestalgorithm-value-byte
+
+todo get array dump of properties
+
+
+8ec71cc1f07db5c6efaccd2cf17352f3
+8EC71CC1F07DB5C6EFACCD2CF17352F3
+
+var myString = "8EC71CC1F07DB5C6EFACCD2CF17352F3";
+var myNum = parseInt(myString, 36);
+myNum.toString(36)
+
+
+
+Did not find a thread from earlier in the hash  {F862D7641587C03D436B404541782B54=1572893535} 0FF86973A294E7B070D7236402881015 Will Woodlief <willwoodlief@gmail.com> Re: hey you !

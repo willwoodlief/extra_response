@@ -1,0 +1,72 @@
+{
+  "responses": [
+    {
+      "day_of_week": "Monday",
+      "response_name": "Test me today",
+      "startHour": 0,
+      "startMinute": 0,
+      "endHour": 23,
+      "endMinute": 55,
+      "thread_id": "16496f1ac42f6913",
+      "spreadsheet_entry": "",
+      "draft_snippit": "My awesome draft ! Fri, 13 Jul 2018 22:59:38 -0500",
+      "filter": "willwoodlief@gmail.com",
+      "star_action": true,
+      "labels": "",
+      "slot": 0,
+      "last_time_check_ts": 1572910755,
+      "forward": "",
+      "threads_responded_to": {
+        "F862D7641587C03D436B404541782B54": 1572893535
+      },
+      "senders_responded_to": {},
+      "start_ts": 1572847200
+    },
+    {
+      "day_of_week": "Wednesday",
+      "response_name": "test to crash",
+      "startHour": 0,
+      "startMinute": 0,
+      "endHour": 19,
+      "endMinute": 0,
+      "thread_id": "16496f1ac42f6913",
+      "spreadsheet_entry": "",
+      "draft_snippit": "My awesome draft ! Fri, 13 Jul 2018 22:59:38 -0500",
+      "filter": "willwoodlief2@gmail.com",
+      "star_action": true,
+      "labels": "cat super",
+      "slot": 1,
+      "last_time_check_ts": null,
+      "forward": "",
+      "threads_responded_to": {},
+      "senders_responded_to": {}
+    },
+    {
+      "day_of_week": "Tuesday",
+      "response_name": "test",
+      "startHour": 0,
+      "startMinute": 0,
+      "endHour": 0,
+      "endMinute": 30,
+      "thread_id": "16496f1ac42f6913",
+      "spreadsheet_entry": "",
+      "draft_snippit": "My awesome draft ! Fri, 13 Jul 2018 22:59:38 -0500",
+      "filter": "willwoodlief@gmail.com",
+      "star_action": true,
+      "labels": "",
+      "slot": 2,
+      "last_time_check_ts": null,
+      "forward": "willwoodlief+test@gmail.com",
+      "threads_responded_to": {},
+      "senders_responded_to": {}
+    }
+  ],
+  "timezone": {
+    "id": "America/Chicago",
+    "offset": "-21600000"
+  },
+  "b_is_on": true,
+  "lable_to_use": "super",
+  "sheet_id": "1uexqSV4ia0P3ptC3LTpY55MD_aeWkwqkLlnk7HSq9kg",
+  "added_trigger": null
+}

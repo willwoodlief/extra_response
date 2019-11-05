@@ -14,6 +14,16 @@
 
 var SETTINGS_KEY = "settings";
 
+var CURRENT_VERSION = '1.3.6.003';
+
+var LAST_CHANGED_ON = 'November 4, 2019 18:20';
+
+var SENDERS_LIFE_IN_HOURS = 2;
+
+var THREAD_LIFE_IN_DAYS = 2;
+
+var MAX_ALLOWED_SETTING_SIZE = 480000;
+
 
 /**
  * clear settings to default again
@@ -43,7 +53,7 @@ function clear_settings() {
  */
 function getSettingsForUser() {
   var savedSettings = cachedPropertiesForUser_().get(SETTINGS_KEY, {});
-  return _.defaults(savedSettings, {
+  var settings =  _.defaults(savedSettings, {
     responses: [],
     timezone: null,
     b_is_on: false,
@@ -51,6 +61,16 @@ function getSettingsForUser() {
       sheet_id: null,
       added_trigger: null
   });
+
+  //   log_me('start dump (v3) of original settings');
+  //   log_me(JSON.stringify(settings));
+  //   log_me('end dump (v3) of original settings');
+  //
+   var new_settings = trim_and_convert_settings(settings);
+  //   log_me('start dump (v3) of new settings');
+  //   log_me(JSON.stringify(new_settings));
+  //   log_me('end dump (v3) of new settings');
+  return new_settings;
 }
 
 /**
