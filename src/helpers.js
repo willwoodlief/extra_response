@@ -254,11 +254,7 @@ function label_a_thread(thread_id,labels) {
 
 }
 
-function log_me(what) {
-    if (DEBUG) {
-        console.info(what);
-    }
-}
+
 
 /**
  * go through and change out the selected keys, in each response, if they have whitespace in them
@@ -323,7 +319,7 @@ function trim_and_convert_settings(settings) {
                         console.log('converting property of ' + t_prop + ' to md5 hash ');
                         t_prop = MD5(t_prop, false); //if it is an old style key then change it
                     }
-                    console.log('adding property of ' + t_prop + ' to threads ');
+
                     new_response.threads_responded_to[t_prop] = ts_of_thread;
                 } else {
                     console.log('removing threads property of ' + t_prop + ' because with a time stamp of  ' + ts_of_thread + ' its too older than ' + THREAD_LIFE_IN_DAYS + ' days' );
@@ -348,15 +344,17 @@ function trim_and_convert_settings(settings) {
                         console.log('converting property of ' + s_prop + ' to md5 hash ');
                         s_prop = MD5(s_prop,false); //if it is an old style key then change it
                     }
-                    console.log('adding property of ' + s_prop + ' to senders ');
                     new_response.senders_responded_to[s_prop] = ts_of_sender;
                 } else {
-                    console.log('removing senders property of ' + s_prop + ' because with a time stamp of  ' + ts_of_thread + ' its older than ' + SENDERS_LIFE_IN_HOURS + ' hours ');
+                    if (DEBUG) {
+                        console.log('removing senders property of ' + s_prop + ' because with a time stamp of  ' + ts_of_thread + ' its older than ' + SENDERS_LIFE_IN_HOURS + ' hours ');
+
+                    }
                 }
             } //end going through the senders_responded_to
         }
     }
-    if (DEBUG) {
+    if (B_DEBUG_SETTINGS) {
         console.log('new settings just before return', JSON.stringify(new_settings));
     }
     return new_settings;

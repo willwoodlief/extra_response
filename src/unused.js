@@ -8,7 +8,6 @@ function reset_responses() {
     updateSettingsForUser(settings);
     if (DEBUG) {
         console.info('reset responses',settings);
-        Logger.log(settings);
     }
 }
 
@@ -16,7 +15,6 @@ function log_settings() {
     var settings = getSettingsForUser();
     if (DEBUG) {
         console.info('reset responses',settings);
-        Logger.log(settings);
     }
 }
 
@@ -33,7 +31,6 @@ function init_trigger() {
   if(!triggerExists) {
       if (DEBUG) {
           console.info('creating one minute trigger');
-          Logger.log('creating one minute trigger');
       }
     ScriptApp.newTrigger('timer_hook_call')
       .timeBased()

@@ -105,6 +105,14 @@ function get_replies_that_are_active() {
             }
 
             response.start_ts = start_ts;
+
+            bytes_of_storage = get_byte_size_of_object(settings);
+
+            if (bytes_of_storage > MAX_ALLOWED_KEY_SIZE) {
+                if (DEBUG) {
+                    console.info("Skipping response "+ response.response_name + " because the response size of " + bytes_of_storage + " is greater than "+ MAX_ALLOWED_KEY_SIZE);
+                }
+            }
             //if got here then okay, lets filter and perhaps send
             ret.push(response);
         }
@@ -238,6 +246,10 @@ function filter_and_apply_response(start_at_ts,response) {
                         console.info("already sent a message for this thread because of ", response.threads_responded_to, thread_hash,thread_hash_string);
                     }
                 } else {
+
+                    //todo if its not, then test by putting a 're: ' in front of it
+                    // var thread_hash_string = headers['From'] + ' re: ' + headers['Subject'];
+                    // var thread_hash = MD5(thread_hash_string,false);
                     if (DEBUG) {
                         console.info("Did not find a thread from earlier in the hash ", response.threads_responded_to, thread_hash,thread_hash_string);
                     }
@@ -300,10 +312,8 @@ function filter_and_apply_response(start_at_ts,response) {
     settings.responses[response.slot] = response;
     updateSettingsForUser(settings);
     if (DEBUG) {
-        console.info('response value is ',response);
-        console.info('response after update is ',settings.responses[response.slot]);
+        console.info('response after update ', JSON.stringify(response));
         console.info('last_time_check_ts is  ' , response.last_time_check_ts);
-        console.info('settings is  ' , settings);
     }
 
 
@@ -430,7 +440,7 @@ function get_email_parts(msg_id) {
     // noinspection JSUnresolvedVariable
     var msg = Gmail.Users.Messages.get("me", msg_id, {format: "full"});
     var payload = msg.payload;
-    var headers = payload.headers;
+   // var headers = payload.headers;
     if(DEBUG) {
         console.info("api payload stuff for message " + msg_id,payload);
     }

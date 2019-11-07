@@ -1,5 +1,3 @@
-// Copyright 2017 Google Inc. All Rights Reserved.
-//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,41 +16,41 @@
  * @constant
  */
 var ActionHandlers = {
-  /**
-   * Displays the meeting search card.
-   *
-   * @param {Event} e - Event from Gmail
-   * @return {GoogleAppsScript.Card.Card}
-   */
-    showMain: function(e) {
+    /**
+     * Displays the meeting search card.
+     *
+     * @param {Event} e - Event from Gmail
+     * @return {GoogleAppsScript.Card.Card}
+     */
+    showMain: function (e) {
         var settings = getSettingsForUser();
-      
+
 // Need ScriptApp OAUTH permission to create automatic triggers. Currently not supported in Gmail Addons
 //        init_trigger();
 
         var message = getCurrentMessage(e);
 
 
-      if (DEBUG) {
-          console.info('Params for show Main is ' , e);
-          console.info('Settings are ' , settings);
-          console.info('message is ' , message);
-      }
+        if (DEBUG) {
+            console.info('Params for show Main is ', e);
+            console.info('Settings are ', settings);
+            console.info('message is ', message);
+        }
 
         var card = buildMainCard(e);
         return card;
-  },
+    },
 
     /**
      * Shows the user settings card.
      * @param {Event} e - Event from Gmail
      * @return {GoogleAppsScript.Card.UniversalActionResponse}
      */
-    showSettings: function(e) {
+    showSettings: function (e) {
         var settings = getSettingsForUser();
         if (DEBUG) {
-            console.info('Params for show settings is ' , e);
-            console.info('User Settings are ' , settings);
+            console.info('Params for show settings is ', e);
+            console.info('User Settings are ', settings);
         }
 
         var card = createMainSettingCard();
@@ -62,7 +60,7 @@ var ActionHandlers = {
             .build();
     },
 
-    openSpreadsheet: function(e) {
+    openSpreadsheet: function () {
 
         var sheet_data = get_spreadsheet_data();
         return CardService.newUniversalActionResponseBuilder()
@@ -76,67 +74,78 @@ var ActionHandlers = {
      * @param {Event} e - Event from Gmail
      * @return {GoogleAppsScript.Card.Card}
      */
-    newResponse: function(e) {
+    newResponse: function (e) {
         var settings = getSettingsForUser();
         getCurrentMessage(e);
         if (DEBUG) {
-            console.info('Params for new response is ' , e);
-            console.info('user settings that are used in creating this new response  is ' , settings);
+            console.info('Params for new response is ', e);
+            console.info('user settings that are used in creating this new response  is ', settings);
         }
 
-        var card =buildEditResponseCard(e,{day_of_week:'Tuesday',startHour:-1,startMinute:-1,endHour:-1,
-            endMinute: -1,thread_id:null,spreadsheet_entry:null,draft_snippit:'',slot: '',response_name:'',
-            star_action:false,labels: '',filter:''
+        var card = buildEditResponseCard(e, {
+            day_of_week: 'Tuesday', startHour: -1, startMinute: -1, endHour: -1,
+            endMinute: -1, thread_id: null, spreadsheet_entry: null, draft_snippit: '', slot: '', response_name: '',
+            star_action: false, labels: '', filter: ''
         });
         return card;
     },
 
-    deleteResponse: function(e) {
+    deleteResponse: function (e) {
         var card = null;
         var settings = getSettingsForUser();
         var responses = settings.responses;
-        var index = parseInt(e.parameters.state);
-        
-       if (DEBUG) {
-            console.info('Params for deleted response is ' , e);
-            console.info('response to edit is (index ) ' , index);
+        var index = parseInt(e.parameters.state) | 0;
+
+        if (DEBUG) {
+            console.info('Params for deleted response is ', e);
+            console.info('response to edit is (index ) ', index);
         }
 
         if (index >= 0) {
             if (index >= responses.length) {
-                throw new Error("state has index of " + index + " but responses only have " + responses.length);
+                throw new Error("deleteResponse: state has index of " + index + " but responses only have " + responses.length);
             }
         } else {
-             card =buildMainCard(e);
+            card = buildMainCard(e);
             return card;
+        }
+        //delete property found in response.index response_key
+        if (settings.responses[index] && settings.responses[index].hasOwnProperty('response_key') && settings.responses[index].response_key) {
+            if (DEBUG) {
+                console.log("Clearing response key of " + settings.responses[index].response_key);
+            }
+            cachedPropertiesForUser_().clear(settings.responses[index].response_key);
+        } else {
+            if (DEBUG) {
+                console.log("Could not clear user cache of index:  " + index);
+            }
         }
         settings.responses[index] = null;
         updateSettingsForUser(settings);
 
-         card =buildMainCard(e);
+        card = buildMainCard(e);
         return card;
     },
 
 
-    editResponse: function(e) {
+    editResponse: function (e) {
         var settings = getSettingsForUser();
         var responses = settings.responses;
         var index = parseInt(e.parameters.state);
         if (index >= 0) {
             if (index >= responses.length) {
-                throw new Error("state has index of " + index + " but responses only have " + responses.length);
+                throw new Error("editResponse: state has index of " + index + " but responses only have " + responses.length);
             }
         } else {
             throw new Error("No state associated with the edit button");
         }
         var response = responses[index];
-        response.slot = index;
         if (DEBUG) {
-            console.info('Params for edit response is ' , e);
-            console.info('response to edit is (index , response) ' , index, response);
+            console.info('Params for edit response is ', e);
+            console.info('response to edit is (index , response) ', index, response);
         }
 
-        var card =buildEditResponseCard(e,response);
+        var card = buildEditResponseCard(e, response);
         return card;
     },
 
@@ -146,35 +155,40 @@ var ActionHandlers = {
      * @param {Event} e - Event from Gmail
      * @return {GoogleAppsScript.Card.Card}
      */
-    saveResponse: function(e) {
+    saveResponse: function (e) {
         var settings = getSettingsForUser();
         var responses = settings.responses;
         var index = responses.length;
         if (e.parameters.state !== '') {
-            index = parseInt(e.parameters.state);
+            index = parseInt(e.parameters.state) | 0;
             if (index >= 0) {
-                if (index >= responses.length) {
-                    throw new Error("state has index of " + index + " but responses only have " + responses.length);
+                if (index > responses.length) {
+                    throw new Error("saveResponse: state has index of " + index + " but responses only have " + responses.length);
                 }
             }
         }
 
+        var older_reponse = null;
+        if (responses[index]) {
+            older_reponse = responses[index];
+        }
+
 
         if (DEBUG) {
-            console.info('Params for save response is ' , e);
-            console.info('old user settings  is ' , settings);
+            console.info('Params for save response is ', e);
+            console.info('settings to be saved is ', settings);
             console.info('thread id is  ', e.formInput.thread_id);
-            console.info('slot is  ', index);
+            console.info('saveResponse: index/slot is  ', index);
         }
 
 
         var draft_snippit = null;
 
         if (e.formInput.thread_id) {
-            draft_snippit = get_draft_snippit( get_draft_info_from_thread(e.formInput.thread_id));
+            draft_snippit = get_draft_snippit(get_draft_info_from_thread(e.formInput.thread_id));
         }
 
-        var star_action = !! e.formInput.star_action ;
+        var star_action = !!e.formInput.star_action;
 
         var rem_last_time_check = null;
         if (settings.responses[index]) {
@@ -189,7 +203,7 @@ var ActionHandlers = {
 
         var response = {
             day_of_week: e.formInput.day_of_week,
-            response_name: e.formInput.response_name ? e.formInput.response_name : '' ,
+            response_name: e.formInput.response_name ? e.formInput.response_name : '',
             startHour: parseInt(e.formInput.start_hour),
             startMinute: parseInt(e.formInput.start_minute),
             endHour: parseInt(e.formInput.end_hour),
@@ -197,50 +211,47 @@ var ActionHandlers = {
             thread_id: e.formInput.thread_id,
             spreadsheet_entry: e.formInput.spreadsheet_entry,
             draft_snippit: draft_snippit,
-            filter: e.formInput.filter ? e.formInput.filter : '' ,
+            filter: e.formInput.filter ? e.formInput.filter : '',
             star_action: star_action,
-            labels: e.formInput.labels ? e.formInput.labels : '' ,
+            labels: e.formInput.labels ? e.formInput.labels : '',
             slot: index,
             last_time_check_ts: rem_last_time_check,
-            forward : e.formInput.forward ? e.formInput.forward : '',
-            threads_responded_to: {},
-            senders_responded_to: {}
+            forward: e.formInput.forward ? e.formInput.forward : '',
+            threads_responded_to: older_reponse ? older_reponse.threads_responded_to : {},
+            senders_responded_to: older_reponse ? older_reponse.senders_responded_to : {}
         };
-      
-        if (e.parameters.state === '') {
-          response.slot = '';
-        }
+
 
         var error_message = validate_response(response);
         if (error_message) {
-            var do_again_card =buildEditResponseCard(e,response,error_message);
+            var do_again_card = buildEditResponseCard(e, response, error_message);
             return do_again_card;
         } else {
-            if (e.parameters.state === '') {
-                   response.slot = index;
-            }
+
             if (e.userTimezone) {
-                settings.timezone = {id:e.userTimezone.id, offset: e.userTimezone.offSet};
+                settings.timezone = {id: e.userTimezone.id, offset: e.userTimezone.offSet};
                 settings.responses[index] = response;
+                if (DEBUG) {
+                    console.info(' updating response at index of ' + index, response);
+                }
             } else {
-                settings.timezone = {id:Session.getScriptTimeZone(), offset: null};
+                settings.timezone = {id: Session.getScriptTimeZone(), offset: null};
             }
 
             if (DEBUG) {
-                console.info(' updating user settings ' , settings);
+                console.info(' updating user settings ', settings);
             }
-            
+
+
+
             updateSettingsForUser(settings);
 
-
-
-            var card =buildMainCard(e);
+            var card = buildMainCard(e);
             return card;
         }
 
 
     },
-
 
 
 };
@@ -254,15 +265,21 @@ function validate_response(response) {
     if (DEBUG) {
         console.info('validating response ', response);
     }
-    if (! (response.thread_id || response.spreadsheet_entry )) {return "Need to Set a Draft or a Spreadsheet Row"}
-    if ( response.thread_id && response.spreadsheet_entry ) {return "Cannot have both a Draft and a Spreadsheet Row"}
-    if ( !response.response_name ) {return "Need to have the name of the response"}
+    if (!(response.thread_id || response.spreadsheet_entry)) {
+        return "Need to Set a Draft or a Spreadsheet Row"
+    }
+    if (response.thread_id && response.spreadsheet_entry) {
+        return "Cannot have both a Draft and a Spreadsheet Row"
+    }
+    if (!response.response_name) {
+        return "Need to have the name of the response"
+    }
 
     //check to see if end time less than or equal to start time
-    var start = response.startHour + (response.startMinute/100);
-    var end = response.endHour + (response.endMinute/100);
+    var start = response.startHour + (response.startMinute / 100);
+    var end = response.endHour + (response.endMinute / 100);
     if (DEBUG) {
-        console.info('time of day to decimal ', start,end);
+        console.info('time of day to decimal ', start, end);
     }
     if (end <= start) {
         return "The ending time needs to be later than the starting time";
@@ -272,9 +289,11 @@ function validate_response(response) {
         //check labels
         var these_labels = response.labels.split(/(\s+)/);
         var real_labels = getLabels();
-        for(var k = 0; k < these_labels.length; k++) {
+        for (var k = 0; k < these_labels.length; k++) {
             var a_label = these_labels[k];
-            if (!a_label.trim()) {continue;}
+            if (!a_label.trim()) {
+                continue;
+            }
             if (!real_labels.hasOwnProperty(a_label)) {
                 return "The label of " + a_label + " does not exist yet in your gmail, please add it and refresh the page to try again"
             }
@@ -284,15 +303,13 @@ function validate_response(response) {
     if (response.forward) {
         //check if valid email format
         if (!validateEmail(response.forward)) {
-            return "this [" +response.forward + "] is not seen as a valid email";
+            return "this [" + response.forward + "] is not seen as a valid email";
         }
     }
 
 
     return null;
 }
-
-
 
 
 function handleSettingsLabelChange(e) {
@@ -304,7 +321,7 @@ function handleSettingsLabelChange(e) {
 
 function handlePluginOnCheckboxChange(e) {
     var settings = getSettingsForUser();
-    var b_on = !! e.formInput.settings_binary ;
+    var b_on = !!e.formInput.settings_binary;
     if (DEBUG) {
         console.info(' b on raw ', b_on);
     }

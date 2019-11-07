@@ -37,6 +37,7 @@
  * @property {?string} lable_to_use
  * @property {?number} sheet_id
  * @property {?boolean} added_trigger
+ * @property {number[]} response_slot_array  , this is managed only by the setting save and restore code
  */
 
 /**
@@ -47,7 +48,7 @@
  * @property {number|null} endHour - end hour (0-23)
  * @property {null|number} endMinute - end minute (0-59)
  * @property {string|null} response_name - response name
- * @property {string|null} thread_id - the draft thread id to use
+ * @property {?string} thread_id - the draft thread id to use
  * @property {string|null} draft_snippit - the draft id to use
  * @property {string|null} spreadsheet_entry - the name of the row in the spreadsheet
  * @property {string|null} filter - response only acts if the email fits in the filter
@@ -58,6 +59,7 @@
  * @property {int|null} last_time_check_ts - last time this was part of an inbox check
  * @property {Object} threads_responded_to  - integer array of thread ids responded to
  * @property {?Object} senders_responded_to  - string hash of senders replied to, with timestamp
+ * @property {?string} response_key - the user settings key this is stored at
  */
 var DEBUG = true;  // flag for adding in debugging code
 

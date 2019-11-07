@@ -27,8 +27,17 @@ function buildEditResponseCard(e, opts,error_response) {
 
     var settings = getSettingsForUser();
 
+    var bytes_of_storage = 0;
+
     if (!opts || (Object.getOwnPropertyNames(opts).length === 0)) {
         opts = {};
+    } else {
+        bytes_of_storage = get_byte_size_of_object(opts);
+    }
+
+    var size_mention = '';
+    if (bytes_of_storage) {
+        size_mention = "  [" +bytes_of_storage + ' bytes / 9k]';
     }
 
     if (! opts.hasOwnProperty('thread_id')) {
@@ -60,7 +69,7 @@ function buildEditResponseCard(e, opts,error_response) {
 
 
     var preferenceSection = CardService.newCardSection()
-        .setHeader("Edit Response")
+        .setHeader("Edit Response " + size_mention)
         .addWidget(top_header)
         .addWidget(
             CardService.newTextInput()
@@ -165,6 +174,8 @@ function buildEditResponseCard(e, opts,error_response) {
         );
 
 
+
+
     return CardService.newCardBuilder()
         .setHeader(CardService.newCardHeader().setTitle("Response"))
         .addSection(preferenceSection)
@@ -210,7 +221,7 @@ function createSpreadsheetSelectDropdown_( label, name, defaultValue) {
         .setTitle(label)
         .setFieldName(name)
         .setType(CardService.SelectionInputType.DROPDOWN);
-    widget.addItem('(none)', '', defaultValue === null);
+    widget.addItem('(none)', '', defaultValue == null);
 
     if (defaultValue) {
         widget.addItem(defaultValue, defaultValue, defaultValue === defaultValue);
@@ -247,7 +258,7 @@ function createDraftSelectDropdown_( label, name, defaultValue,default_name) {
         .setFieldName(name)
         .setType(CardService.SelectionInputType.DROPDOWN);
 
-    widget.addItem('(none)', '', defaultValue === null);
+    widget.addItem('(none)', '', defaultValue == null);
 
     if (defaultValue) {
         widget.addItem(default_name, defaultValue, defaultValue === defaultValue);
@@ -461,11 +472,24 @@ function buildMainCard(e) {
             percent_used = Math.round(bytes_of_storage/MAX_ALLOWED_SETTING_SIZE * 100);
             normal_size_message = "Stored Memory is "+ percent_used +"% Filled ";
         } else {
-            percent_used = Math.round(bytes_of_storage/9000 * 100);
+            percent_used = Math.round(bytes_of_storage/MAX_ALLOWED_SETTING_SIZE * 100);
             normal_size_message = "Testing: Estimated Stored Memory is "+ percent_used +"% Filled. Tell willwoodlief@gmail.com what this is ";
         }
-
     }
+
+    var response_sizes= [] ;
+    for(var j = 0; j < settings.responses.length; j++) {
+        var response = settings.responses[j];
+        bytes_of_storage = get_byte_size_of_object(response);
+
+        if (bytes_of_storage > MAX_ALLOWED_KEY_SIZE) {
+            if (DEBUG) {
+                console.info("Response "+ response.response_name + " has is too big,  the response size of " + bytes_of_storage + " is greater than "+ MAX_ALLOWED_KEY_SIZE);
+            }
+            response_sizes.push("Response "+ response.response_name + " is disabled because its size is " + bytes_of_storage + " bytes (limit is "+ MAX_ALLOWED_KEY_SIZE);
+        }
+    }
+
 
     card.addSection(CardService.newCardSection()
             .addWidget(CardService.newTextParagraph()
@@ -480,6 +504,12 @@ function buildMainCard(e) {
 
     if (normal_size_message) {
         card.addSection(CardService.newCardSection().addWidget(CardService.newTextParagraph().setText(normal_size_message)));
+    }
+
+    if (response_sizes.length > 0) {
+        for(var k =0; k < response_sizes.length; k++) {
+            card.addSection(CardService.newCardSection().addWidget(CardService.newTextParagraph().setText(response_sizes[k])));
+        }
     }
 
 
@@ -563,7 +593,7 @@ function createMainSettingCard() {
         .setTitle("Label to Use When Selecting Drafts")
         .setFieldName("lable_to_use")
         .setType(CardService.SelectionInputType.DROPDOWN);
-    label_widget.addItem("(none)", null, null === settings.lable_to_use);
+    label_widget.addItem("(none)", null, null == settings.lable_to_use);
     for (var i = 0; i < labels.length; ++i) {
         label_widget.addItem(labels[i], labels[i], labels[i] === settings.lable_to_use);
     }
